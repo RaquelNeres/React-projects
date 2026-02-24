@@ -1,42 +1,31 @@
 <script setup>
-    import { reactive, ref } from 'vue'
+    import { reactive } from 'vue'
     import Folders from './Folders.vue'
 
+    const props = defineProps({
+        pastas: Array,
+    })
+
     // -----------------------------------  PAI
-    const pastas = ref([
-    { id: 1, title: "Conteúdo da pasta 1" },
-    { id: 2, title: "Conteúdo da pasta 2" }
-    ])
+    const emit = defineEmits(['add-pasta', 'delete-pasta'])
 
-    const teste = reactive([
-        { id: 0, title: "Conteúdo da pasta 1" },
-        { id: 1, title: "Conteúdo da pasta 2" }
-    ])
-    console.log(teste)
-    console.log(teste[0].title)
-    console.log(teste[0].id)
-
-    const novaPasta = ref('')
+    const form = reactive({ novaPasta: '' })
 
     const deletar = (id) => {
-        pastas.value = pastas.value.filter(p => p.id !== id)
+        emit('delete-pasta', id)
     }
 
     function onAddTaskSubmit() {
-        if (novaPasta.value.trim() === '') return
+        if (form.novaPasta.trim() === '') return
 
         const newTask = {
-            id: pastas.value.length + 1,
-            title: novaPasta.value,
-        };
+            id: props.pastas.length + 1,
+            title: form.novaPasta,
+        }
 
-        pastas.value.push(newTask);
-        novaPasta.value = ''
-
-        // (Estilo Imutável/React):
-        // pastas.value = [...pastas.value, newTask];
+        emit('add-pasta', newTask)
+        form.novaPasta = ''
     }
-
 </script>
 
 <template>
@@ -45,8 +34,8 @@
 
         <!-- passando os dados -->
         <Folders
-            v-for="pasta in pastas"
-            :key="pasta.id" 
+            v-for="pasta in props.pastas"
+            :key="pasta.id"
             :id="pasta.id"
             :title="pasta.title"
             @delete="deletar"
@@ -55,7 +44,7 @@
 
         <div class="p-4 flex flex-col gap-2">
             <input 
-                v-model="novaPasta"
+                v-model="form.novaPasta"
                 type="text" 
                 placeholder="Nova Pasta" 
                 class="border border-slate-500 text-white p-2 rounded-lg w-full bg-transparent"

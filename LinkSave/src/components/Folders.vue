@@ -21,19 +21,19 @@
 
 <template>
   <div class="p-2">
-    <button class="w-full" @click="">
+    <div class="w-full cursor-pointer">
       <div 
         class="text-white p-3 bg-slate-600 rounded-xl flex justify-between items-center"
       > <span>{{ title }}</span>
   
         <button 
-          class="hover:opacity-80 transition-opacity" 
+          class="hover:opacity-80 transition-opacity"
           @click="handleDelete"
         >
           <svg-icon style="color: red" type="mdi" :path="path" :size="24"></svg-icon>
         </button>
       </div>
-    </button>
+    </div>
   </div>
 
 </template>

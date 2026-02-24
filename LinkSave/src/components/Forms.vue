@@ -1,15 +1,27 @@
 <script setup>
+import { ref } from 'vue'
 
-  // -----------------------------------  FILHO
-  const props = defineProps({
-    dados: Array,
+const props = defineProps({
+  dados: Array,
+})
+
+const emit = defineEmits(['add-link'])
+
+const title = ref('')
+const url = ref('')
+const tags = ref('')
+const pasta = ref('Todos os Links')
+const description = ref('')
+
+function handleAddLink() {
+  emit('add-link', {
+    title: title.value,
+    url: url.value,
+    tags: tags.value,
+    pasta: pasta.value,
+    description: description.value
   })
-
-  const emit = defineEmits(['add-link'])
-
-  function handleAddLink(title, url, tags, pasta, description) {
-    emit('add-link', { title, url, tags, pasta, description })
-  }
+}
 </script>
 
 <template>
@@ -39,7 +51,6 @@
 
             <select
                 v-model="pasta"
-                value=""    
                 class="bg-slate-700 text-white p-2 rounded border border-slate-500 w-full">
                 <option>Todos os Links</option>
                 <option v-for="dado in dados" :value="dado.pasta">
@@ -57,7 +68,11 @@
             text-white p-2 rounded-lg w-full pb-20"
             />
 
-            <button @click="handleAddLink(title, url, tags, pasta, description)" class="bg-sky-700 w-30 p-2.5 rounded-lg text-left ml-3">Adicionar link</button>
+            <button @click="handleAddLink(title, url, tags, pasta, description)" 
+            class="bg-sky-700 w-30 p-2.5 rounded-lg text-left ml-3 
+            hover:bg-sky-600 transition-colors duration-200">
+                Adicionar link
+            </button>
 
         </div>
 
