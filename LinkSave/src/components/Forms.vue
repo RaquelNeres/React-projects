@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 const props = defineProps({
-  dados: Array,
+    pastas: Array,
 })
 
 const emit = defineEmits(['add-link'])
@@ -14,10 +14,15 @@ const pasta = ref('Todos os Links')
 const description = ref('')
 
 function handleAddLink() {
+  const tagsArray = tags.value
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(tag => tag !== '')
+
   emit('add-link', {
     title: title.value,
     url: url.value,
-    tags: tags.value,
+    tags: tagsArray, 
     pasta: pasta.value,
     description: description.value
   })
@@ -25,8 +30,8 @@ function handleAddLink() {
 </script>
 
 <template>
-    <div class="h-125 w-full">
-        <h1 class="text-white text-3xl ml-10 mt-10 mb-10">Forms</h1>
+    <div>
+        <h1 class="text-white text-3xl ml-10 mb-5">Forms</h1>
 
         <div class="ml-10 mr-10 p-5
         grid grid-cols-2 gap-4 bg-[#1f2937]">
@@ -53,9 +58,9 @@ function handleAddLink() {
                 v-model="pasta"
                 class="bg-slate-700 text-white p-2 rounded border border-slate-500 w-full">
                 <option>Todos os Links</option>
-                <option v-for="dado in dados" :value="dado.pasta">
+                <option v-for="pasta in pastas" :value="pasta.title">
                     <span>
-                        {{ dado.pasta }}
+                        {{ pasta.title }}
                     </span>
                 </option>
                 <option @click="" value="novo">+ Criar pasta...</option>

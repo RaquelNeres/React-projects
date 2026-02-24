@@ -2,16 +2,16 @@
 import FramePags from './components/FramePags.vue'
 import Forms from './components/Forms.vue'
 import NavBar from './components/NavBar.vue'
+import MenuElements from './components/MenuElements.vue'
 import { reactive, onMounted } from 'vue'
 
 const state = reactive({
   dados: [
-    { id: 1, title: "Link 1", url: "https://example.com/link1", tags: ["tag1", "tag2"], pasta: "Pasta 1", description: "Descrição do Link 1" },
+    { id: 1, title: "Link 1", url: "https://example.com/link1", tags: ["tag1", "tag2"], pasta: "Pasta 0", description: "Descrição do Link 1" },
     { id: 2, title: "Link 2", url: "https://example.com/link2", tags: ["tag3"], pasta: "Pasta 2", description: "Descrição do Link 2" }
   ],
   pastas: [
-    { id: 1, title: "Pasta 3" },
-    { id: 2, title: "Pasta 4" }
+    {}
   ]
 })
 
@@ -25,8 +25,10 @@ onMounted(() => {
 
     // verifica se existi valor, converte de String para array/objeto
     // insere os valores das chaves que estavam no Storage para o state
-    if (pastasStorage) state.pastas = JSON.parse(pastasStorage)
-    if (dadosStorage)  state.dados  = JSON.parse(dadosStorage)
+    if (pastasStorage) 
+      state.pastas = JSON.parse(pastasStorage)
+    if (dadosStorage)  
+      state.dados  = JSON.parse(dadosStorage)
   } catch(e) {
     localStorage.removeItem('pastas')
     localStorage.removeItem('dados')
@@ -53,14 +55,16 @@ function handleDeletePasta(id) {
 }
 
 // -----------------------------------  PAI - Forms
-function handleAddLink(title, url, tags, pasta, description) {
+function handleAddLink({title, url, tags, pasta, description}) {
   state.dados.push({
     id: state.dados.length + 1,
     title, url, tags, pasta, description
   })
 
-  localStorage.setItem('pastas', JSON.stringify(state.pastas))
+  localStorage.setItem('dados', JSON.stringify(state.dados))
 }
+
+// -----------------------------------  PAI - Menu
 </script>
 
 <template>  
@@ -74,10 +78,16 @@ function handleAddLink(title, url, tags, pasta, description) {
     />
 
     <!-- recebendo os valores do usuario -->
-    <Forms 
-      :dados="state.dados"
-      @add-link="handleAddLink"
-    />
+     <div class="h-125 w-full mt-10">
+       <Forms class="" 
+         :pastas="state.pastas"
+         @add-link="handleAddLink"
+       />
+   
+      <MenuElements class="ml-10 mt-5"
+        :dados="state.dados"
+      />
+     </div>
 
   </div>
 </template>
