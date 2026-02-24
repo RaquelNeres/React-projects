@@ -44,7 +44,6 @@
         <h1 class="text-xl font-bold text-amber-50 mt-8 ml-5 mb-5">Pastas</h1>
 
         <!-- passando os dados -->
-        
         <Folders
             v-for="pasta in pastas"
             :key="pasta.id" 

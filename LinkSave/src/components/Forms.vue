@@ -1,5 +1,15 @@
 <script setup>
 
+  // -----------------------------------  FILHO
+  const props = defineProps({
+    dados: Array,
+  })
+
+  const emit = defineEmits(['add-link'])
+
+  function handleAddLink(title, url, tags, pasta, description) {
+    emit('add-link', { title, url, tags, pasta, description })
+  }
 </script>
 
 <template>
@@ -10,34 +20,44 @@
         grid grid-cols-2 gap-4 bg-[#1f2937]">
             <input 
                 type="text" 
-                value="title" 
+                v-model="title"
                 placeholder="Título" 
                 class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
             />
             <input 
                 type="text" 
-                value="url" 
+                v-model="url"
                 placeholder="URL" 
             class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
             />
             <input 
-                type="text" 
-                value="tags" 
+                type="text"     
+                v-model="tags"
                 placeholder="Tags" 
                 class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
             />
 
-            <select class="bg-slate-700 text-white p-2 rounded border border-slate-500 w-full">
-                <option value="todos">Todos os Links</option>
-                <option value="prog">programação</option>
-                <option value="novo">+ Criar nova pasta...</option>
+            <select
+                v-model="pasta"
+                value=""    
+                class="bg-slate-700 text-white p-2 rounded border border-slate-500 w-full">
+                <option>Todos os Links</option>
+                <option v-for="dado in dados" :value="dado.pasta">
+                    <span>
+                        {{ dado.pasta }}
+                    </span>
+                </option>
+                <option @click="" value="novo">+ Criar pasta...</option>
             </select>
-            <input type="text" value="description" placeholder="Descrição" 
-            class="border border-slate-500 bg-[#374151] col-span-2
+            <input 
+                type="text" 
+                v-model="description"
+                placeholder="Descrição" 
+                class="border border-slate-500 bg-[#374151] col-span-2
             text-white p-2 rounded-lg w-full pb-20"
             />
 
-            <button class="bg-sky-700 w-30 p-2.5 rounded-lg text-left ml-3">Adicionar link</button>
+            <button @click="handleAddLink(title, url, tags, pasta, description)" class="bg-sky-700 w-30 p-2.5 rounded-lg text-left ml-3">Adicionar link</button>
 
         </div>
 
