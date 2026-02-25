@@ -65,6 +65,18 @@ function handleAddLink({title, url, tags, pasta, description}) {
 }
 
 // -----------------------------------  PAI - Menu
+function handleDeleteLink(id){
+  state.dados = state.dados.filter(dados => dados.id !== id)
+  localStorage.setItem('dados', JSON.stringify(state.dados))
+}
+
+function handleEditLink(dadoEditado) {
+  const index = state.dados.findIndex(d => d.id === dadoEditado.id)
+  if (index !== -1) {
+    state.dados[index] = dadoEditado
+    localStorage.setItem('dados', JSON.stringify(state.dados))
+  }
+}
 </script>
 
 <template>  
@@ -78,14 +90,17 @@ function handleAddLink({title, url, tags, pasta, description}) {
     />
 
     <!-- recebendo os valores do usuario -->
-     <div class="h-125 w-full mt-10">
+     <div class="min-h-screen w-full mt-10">
        <Forms class="" 
          :pastas="state.pastas"
          @add-link="handleAddLink"
        />
    
-      <MenuElements class="ml-10 mt-5"
+      <MenuElements 
+        class="ml-10 mt-5"
         :dados="state.dados"
+        @edit-link="handleEditLink"
+        @delete-link="handleDeleteLink"
       />
      </div>
 

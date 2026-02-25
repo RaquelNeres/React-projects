@@ -26,6 +26,12 @@ function handleAddLink() {
     pasta: pasta.value,
     description: description.value
   })
+
+  title.value = ''
+  url.value = ''
+  tags.value = ''
+  pasta.value = 'Todos os Links'
+  description.value = ''
 }
 </script>
 
@@ -35,19 +41,22 @@ function handleAddLink() {
 
         <div class="ml-10 mr-10 p-5
         grid grid-cols-2 gap-4 bg-[#1f2937]">
-            <input 
+            <input
+                required 
                 type="text" 
                 v-model="title"
                 placeholder="Título" 
                 class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
             />
-            <input 
+            <input
+                required 
                 type="text" 
                 v-model="url"
                 placeholder="URL" 
             class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
             />
-            <input 
+            <input
+                required 
                 type="text"     
                 v-model="tags"
                 placeholder="Tags" 
@@ -65,7 +74,8 @@ function handleAddLink() {
                 </option>
                 <option @click="" value="novo">+ Criar pasta...</option>
             </select>
-            <input 
+            <input
+                required 
                 type="text" 
                 v-model="description"
                 placeholder="Descrição" 
