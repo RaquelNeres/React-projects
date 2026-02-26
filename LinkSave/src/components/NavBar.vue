@@ -11,10 +11,6 @@
 
     const form = reactive({ novaPasta: '' })
 
-    // const deletar = (id) => {
-    //     emit('delete-pasta', id)
-    // }
-
     function deletar(id) {
         emit('delete-pasta', id)
     }

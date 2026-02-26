@@ -1,6 +1,7 @@
 <script setup>
   import SvgIcon from '@jamescoyle/vue-icon'
   import { mdiDeleteForever } from '@mdi/js'
+  import { useRoute } from 'vue-router'
 
   const path = mdiDeleteForever
 
@@ -23,8 +24,14 @@
   <div class="p-2">
     <div class="w-full cursor-pointer">
       <div 
-        class="text-white p-3 bg-slate-600 rounded-xl flex justify-between items-center"
-      > <span>{{ title }}</span>
+        class="text-white p-3 bg-slate-600 
+        rounded-xl flex justify-between items-center"
+      > 
+        <router-link :to="'/' + props.title" class="flex-1">
+          <span>
+            {{ title }}
+          </span>
+        </router-link>
   
         <button 
           class="hover:opacity-80 transition-opacity cursor-pointer"

@@ -1,6 +1,6 @@
 <script setup>
-    import { ref, nextTick } from 'vue'
-import FramePags from './FramePags.vue'
+    import { ref } from 'vue'
+    import FramePags from './FramePags.vue'
 
     const props = defineProps({
         dados: Array,
@@ -70,7 +70,7 @@ import FramePags from './FramePags.vue'
 </script>
 
 <template>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full pr-15 ml-15 mt-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
             class="border border-slate-500 p-4 rounded-lg flex flex-col gap-2"
             v-for="dado in props.dados"
@@ -109,7 +109,6 @@ import FramePags from './FramePags.vue'
                 </span>
             </div>
 
-            <!-- Linha: Abrir Link | Mostrar Post -->
             <div class="flex justify-between items-center mt-1">
                 <a
                     :href="dado.url"
