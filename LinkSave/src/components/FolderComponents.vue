@@ -1,22 +1,32 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import MenuElements from './MenuElements.vue'
 import NavBar from './NavBar.vue'
 
 const route = useRoute()
-const pastaTitle = route.params.title
+const pastaTitle = computed(() => route.params.title)
 
 const dados = ref([])
 const pastas = ref([])
 
-onMounted(() => {
+function carregarDados() {
   dados.value = JSON.parse(localStorage.getItem('dados') || '[]')
   pastas.value = JSON.parse(localStorage.getItem('pastas') || '[]')
-})
+}
+
+onMounted(() => carregarDados())
+
+// recarrega ao trocar de pasta
+watch(
+  () => route.params.pastaTitle,
+  () => {
+    carregarDados()
+  }
+)
 
 const dadosFiltrados = computed(() =>
-  dados.value.filter(dado => dado.pasta === pastaTitle)
+  dados.value.filter(dado => dado.pasta === pastaTitle.value)
 )
 
 // -----------------------------------  PAI - Menu
@@ -36,6 +46,22 @@ function handleEditLink(dadoEditado) {
     dados.value[index] = dadoEditado
     localStorage.setItem('dados', JSON.stringify(dados.value))
   }
+}
+
+// -----------------------------------  AVO - NavBar
+function handleAddPasta(newPasta) {
+  if (newPasta.title.trim() === '') return
+  if (pastas.value.some(p => p.title === newPasta.title)) {
+    alert('Já existe uma pasta com esse nome!')
+    return
+  }
+  pastas.value.push(newPasta)
+  localStorage.setItem('pastas', JSON.stringify(pastas.value))
+}
+
+function handleDeletePasta(id) {
+  pastas.value = pastas.value.filter(pasta => pasta.id !== id)
+  localStorage.setItem('pastas', JSON.stringify(pastas.value))
 }
 </script>
 
