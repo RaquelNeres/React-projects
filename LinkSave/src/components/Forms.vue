@@ -37,34 +37,34 @@ function handleAddLink() {
 
 <template>
     <div>
-        <h1 class="text-white text-3xl ml-10 mb-5">Forms</h1>
+        <h1 class="text-white text-3xl mb-5">Forms</h1>
 
-        <div class="ml-10 mr-10 p-5
+        <div class="p-5
         grid grid-cols-2 gap-4 bg-[#1f2937]">
             <input
                 required 
                 type="text" 
                 v-model="title"
                 placeholder="Título" 
-                class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
+                class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg"
             />
             <input
                 required 
                 type="text" 
                 v-model="url"
                 placeholder="URL" 
-            class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
+            class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg"
             />
             <input
                 type="text"     
                 v-model="tags"
                 placeholder="Tags" 
-                class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"
+                class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg"
             />
 
             <select
                 v-model="pasta"
-                class="bg-slate-700 text-white p-2 rounded border border-slate-500 w-full">
+                class="bg-slate-700 text-white p-2 rounded border border-slate-500">
                 <option>Todos os Links</option>
                 <option v-for="pasta in pastas" :value="pasta.title">
                     <span>
@@ -78,7 +78,7 @@ function handleAddLink() {
                 v-model="description"
                 placeholder="Descrição" 
                 class="border border-slate-500 bg-[#374151] col-span-2
-            text-white p-2 rounded-lg w-full pb-20"
+            text-white p-2 rounded-lg pb-20"
             />
 
             <button @click="handleAddLink(title, url, tags, pasta, description)" 
