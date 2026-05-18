@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyNest — Organize seus estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== THEMES (MANTIDOS INTACTOS) ===== */
+:root {
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --sidebar-w: 280px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.2s ease;
+}
+
+[data-theme="dark"] { --bg: #0f0f11; --bg2: #161619; --bg3: #1e1e23; --bg4: #26262d; --border: #2e2e38; --text: #e8e8f0; --text2: #9090a8; --text3: #5c5c74; --accent: #7c6ff7; --accent2: #5c54d4; --accent-bg: #1e1b3a; --tag: #2a2a3a; --tag-text: #a09cf5; --link-card: #16161a; --link-hover: #1c1c24; --note-bg: #1a1a1f; --shadow: 0 2px 16px rgba(0,0,0,0.5); }
+[data-theme="light"] { --bg: #f7f6f3; --bg2: #ffffff; --bg3: #f0eeea; --bg4: #e8e5df; --border: #ddd9d0; --text: #2a2620; --text2: #7a7368; --text3: #b0a99e; --accent: #6b5ce7; --accent2: #5347c4; --accent-bg: #eeeaff; --tag: #e8e5f5; --tag-text: #5347c4; --link-card: #ffffff; --link-hover: #f5f3ff; --note-bg: #faf9f7; --shadow: 0 2px 12px rgba(0,0,0,0.08); }
+[data-theme="sepia"] { --bg: #f4efe8; --bg2: #fdf8f2; --bg3: #ece6dd; --bg4: #e0d9ce; --border: #d5ccbf; --text: #3d2e1e; --text2: #7a6150; --text3: #b09a84; --accent: #c07a3a; --accent2: #a0601c; --accent-bg: #fceedd; --tag: #f0e6d6; --tag-text: #a0601c; --link-card: #fdf8f2; --link-hover: #f9f1e5; --note-bg: #faf6f0; --shadow: 0 2px 12px rgba(80,50,20,0.1); }
+[data-theme="forest"] { --bg: #0d1512; --bg2: #131f1a; --bg3: #182820; --bg4: #1f3028; --border: #263d30; --text: #c8e8d8; --text2: #7aa88a; --text3: #3d6050; --accent: #4ec97a; --accent2: #38a862; --accent-bg: #152a1e; --tag: #1a3222; --tag-text: #4ec97a; --link-card: #101a15; --link-hover: #162218; --note-bg: #111814; --shadow: 0 2px 16px rgba(0,0,0,0.5); }
+[data-theme="night-blue"] { --bg: #090c14; --bg2: #0e1320; --bg3: #141c2e; --bg4: #1a2438; --border: #1e2d44; --text: #c8d8f0; --text2: #6888b0; --text3: #334466; --accent: #4d9ef7; --accent2: #2d7fd8; --accent-bg: #0d1f38; --tag: #142030; --tag-text: #4d9ef7; --link-card: #0b1018; --link-hover: #101820; --note-bg: #0a1016; --shadow: 0 2px 16px rgba(0,0,0,0.6); }
+[data-theme="rose"] { --bg: #fdf2f4; --bg2: #fff7f8; --bg3: #f5e8eb; --bg4: #eed9de; --border: #e5c8cf; --text: #3d1a22; --text2: #8a5060; --text3: #c09098; --accent: #d44e6e; --accent2: #b23356; --accent-bg: #fde8ed; --tag: #f8dee5; --tag-text: #b23356; --link-card: #fff7f8; --link-hover: #fff0f3; --note-bg: #fdf4f6; --shadow: 0 2px 12px rgba(180,60,80,0.08); }
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
+button { font-family: var(--font-body); cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: var(--font-body); color: var(--text); }
+a { color: var(--accent); text-decoration: none; }
+::placeholder { color: var(--text3); }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ===== SIDEBAR ===== */
+#sidebar { width: var(--sidebar-w); background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; transition: width 0.3s ease; position: relative; z-index: 10; }
+#sidebar.collapsed { width: 60px; }
+.sidebar-header { padding: 22px 18px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.logo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; }
+.logo span { color: var(--text); }
+#sidebar.collapsed .logo { display: none; }
+.sidebar-toggle { margin-left: auto; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text2); transition: background var(--transition); flex-shrink: 0; }
+.sidebar-toggle:hover { background: var(--bg3); }
+.sidebar-toggle svg { width: 18px; height: 18px; }
+.sidebar-section { padding: 12px 12px 6px; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); font-weight: 600; white-space: nowrap; }
+#sidebar.collapsed .sidebar-section { visibility: hidden; }
+.sidebar-nav { overflow-y: auto; flex: 1; padding: 0 10px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; cursor: pointer; transition: background var(--transition); white-space: nowrap; overflow: hidden; margin-bottom: 4px; position: relative; }
+.nav-item:hover { background: var(--bg3); }
+.nav-item.active { background: var(--accent-bg); color: var(--accent); }
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-item span { font-size: 0.95rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+#sidebar.collapsed .nav-item span { display: none; }
+.folder-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: background var(--transition); margin-bottom: 4px; position: relative; }
+.folder-item:hover { background: var(--bg3); }
+.folder-item.active { background: var(--accent-bg); }
+.folder-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background: var(--tag); overflow: hidden; }
+.folder-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.folder-info { overflow: hidden; flex: 1; }
+.folder-name { font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folder-count { font-size: 0.78rem; color: var(--text3); }
+#sidebar.collapsed .folder-info { display: none; }
+.add-folder-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--text3); font-size: 0.92rem; transition: all var(--transition); margin-bottom: 8px; border: 1px dashed var(--border); margin: 0 8px 12px; }
+.add-folder-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+.add-folder-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+#sidebar.collapsed .add-folder-btn span { display: none; }
+
+/* ===== MAIN & TOPBAR ===== */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+#topbar { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+#page-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; flex: 1; }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; width: 220px; transition: border-color var(--transition); }
+.search-box:focus-within { border-color: var(--accent); }
+.search-box input { background: none; border: none; outline: none; font-size: 0.83rem; width: 100%; color: var(--text); }
+.search-box svg { width: 14px; height: 14px; color: var(--text3); flex-shrink: 0; }
+.topbar-btn { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text2); transition: background var(--transition), color var(--transition); position: relative; }
+.topbar-btn:hover { background: var(--bg3); color: var(--text); }
+.topbar-btn svg { width: 18px; height: 18px; }
+.theme-dropdown { position: absolute; top: 44px; right: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow); z-index: 100; display: none; min-width: 160px; }
+.theme-dropdown.open { display: block; }
+.theme-opt { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 0.83rem; transition: background var(--transition); }
+.theme-opt:hover { background: var(--bg3); }
+.theme-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; }
+#content { flex: 1; overflow: auto; padding: 24px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== QUICK NOTE FLOATING ===== */
+#quick-note-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); cursor: pointer; z-index: 200; transition: transform 0.2s, box-shadow 0.2s; }
+#quick-note-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(0,0,0,0.4); }
+#quick-note-fab svg { width: 22px; height: 22px; }
+#quick-note-panel { position: fixed; bottom: 84px; right: 24px; width: 320px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 199; display: none; flex-direction: column; overflow: hidden; }
+#quick-note-panel.open { display: flex; }
+.qnp-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; color: var(--text2); display: flex; align-items: center; justify-content: space-between; }
+#quick-note-text { width: 100%; background: none; border: none; outline: none; resize: none; padding: 12px 14px; font-size: 0.85rem; line-height: 1.6; min-height: 120px; color: var(--text); }
+
+/* ===== MODAL ===== */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 520px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
+.modal h2 { font-family: var(--font-display); font-size: 1.2rem; margin-bottom: 18px; font-weight: 600; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 0.88rem; outline: none; transition: border-color var(--transition); color: var(--text); }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+.btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 500; transition: all var(--transition); cursor: pointer; border: none; display: flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg4); color: var(--text); }
+.btn-danger { background: #e24b4a22; color: #e24b4a; border: 1px solid #e24b4a44; }
+.btn-danger:hover { background: #e24b4a33; }
+.btn-success { background: #4ec97a; color: #fff; }
+.btn-success:hover { background: #38a862; }
+
+/* ===== LINK CARDS (COM EMBED) ===== */
+.links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.links-list { display: flex; flex-direction: column; gap: 8px; }
+.link-card { background: var(--link-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color 0.2s, background 0.2s, transform 0.15s; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.link-card:hover { border-color: var(--accent); background: var(--link-hover); transform: translateY(-1px); }
+.link-card-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.link-favicon { width: 28px; height: 28px; border-radius: 6px; background: var(--bg3); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; font-size: 0.85rem; }
+.link-favicon img { width: 100%; height: 100%; object-fit: cover; }
+.link-title-area { flex: 1; overflow: hidden; }
+.link-title { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.link-url { font-size: 0.72rem; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-mono); }
+.link-note { font-size: 0.8rem; color: var(--text2); line-height: 1.5; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.link-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tag { background: var(--tag); color: var(--tag-text); font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+.link-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; }
+.link-date { font-size: 0.7rem; color: var(--text3); }
+.link-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+.link-card:hover .link-actions { opacity: 1; }
+.link-action-btn { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text2); transition: background 0.15s, color 0.15s; cursor: pointer; border: none; background: transparent; }
+.link-action-btn:hover { background: var(--bg3); color: var(--text); }
+.link-action-btn.del:hover { background: #e24b4a22; color: #e24b4a; }
+.link-action-btn svg { width: 14px; height: 14px; }
+
+/* EMBED IFRAME NO CARD */
+.embed-container { width: 100%; height: 160px; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background: var(--bg3); border: 1px solid var(--border); }
+.embed-container iframe { width: 100%; height: 100%; border: none; }
+
+.link-list-item { background: var(--link-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: background 0.15s, border-color 0.15s; }
+.link-list-item:hover { background: var(--link-hover); border-color: var(--accent); }
+.link-list-item .link-favicon { width: 28px; height: 28px; font-size: 0.88rem; }
+.lli-title { font-size: 1rem; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lli-url { font-size: 0.8rem; color: var(--text3); font-family: var(--font-mono); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lli-note { font-size: 0.82rem; color: var(--text2); max-width: 100%; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+.lli-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.link-list-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.link-list-item:hover .lli-actions { opacity: 1; }
+.link-card { padding: 22px; min-height: 280px; }
+.link-card-header { gap: 14px; }
+.link-favicon { width: 40px; height: 40px; border-radius: 12px; font-size: 1rem; }
+.link-title { font-size: 1.05rem; }
+.link-url { font-size: 0.78rem; }
+.link-note, .link-desc { font-size: 0.9rem; color: var(--text2); margin-top: 12px; line-height: 1.5; }
+.link-card-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.link-card-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; min-width: 100px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.link-card-btn:hover { background: var(--bg3); border-color: var(--accent); }
+.link-card-btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.link-card-btn.danger { background: #e24b4a22; color: #e24b4a; border-color: #e24b4a44; }
+.link-card-btns a { text-decoration: none; }
+.link-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.link-footer .link-date { font-size: 0.76rem; color: var(--text3); }
+.link-list-item .link-list-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.link-list-item .link-list-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.link-list-item .link-list-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.link-list-item .link-list-actions .link-action-btn { padding: 8px 10px; border-radius: 8px; min-width: 88px; font-size: 0.82rem; }
+.link-list-item .link-list-actions .link-action-btn:hover { background: var(--bg3); }
+
+/* ===== FOLDER HEADER ===== */
+.folder-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.folder-header-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; overflow: hidden; border: 1px solid var(--border); }
+.folder-header-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.folder-header-info { flex: 1; }
+.folder-header-name { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
+.folder-header-desc { font-size: 0.83rem; color: var(--text2); margin-top: 2px; }
+.folder-header-actions { display: flex; gap: 8px; }
+
+/* ===== NOTES (ORIGINAL) ===== */
+.note-card { background: var(--note-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+.note-card-header { padding: 10px 14px; background: var(--bg3); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+.note-card-title { font-size: 0.9rem; font-weight: 600; color: var(--text); flex: 1; }
+.note-card-body { display: flex; gap: 16px; padding: 14px; flex-wrap: wrap; }
+.note-card-main { flex: 1 1 360px; min-width: 260px; }
+.note-card-images { width: 220px; display: grid; gap: 10px; }
+.note-card-images .img-preview-item { min-height: 140px; }
+.note-card-note-view { color: var(--text); line-height: 1.75; word-break: break-word; white-space: pre-wrap; }
+.note-card-note-view p { margin: 0 0 0.75rem; }
+.note-card-note-view em { color: var(--text3); }
+.note-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.note-card-actions button { padding: 6px 10px; min-width: 88px; border-radius: 6px; }
+.note-textarea { width: 100%; background: none; border: none; outline: none; resize: none; padding: 14px; font-size: 0.875rem; line-height: 1.7; min-height: 130px; color: var(--text); }
+
+/* ===== EDITOR RICH TEXT (NOVIDADE APLICADA NAS NOTAS) ===== */
+.editor-toolbar { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-wrap: wrap; }
+.editor-btn { width: 28px; height: 28px; border-radius: 4px; border: none; background: transparent; color: var(--text2); font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+.editor-btn:hover { background: var(--bg4); color: var(--text); }
+.editor-btn.highlight-btn { color: var(--accent); }
+.rich-editor { width: 100%; min-height: 130px; padding: 14px; outline: none; font-size: 0.875rem; line-height: 1.7; color: var(--text); overflow-y: auto; background: var(--note-bg); }
+.rich-editor:empty:before { content: attr(data-placeholder); color: var(--text3); pointer-events: none; display: block; }
+.rich-editor mark { background-color: var(--accent-bg); color: var(--accent); padding: 0 2px; border-radius: 2px; }
+.rich-editor ul, .rich-editor ol { padding-left: 20px; margin: 8px 0; }
+#folder-notes-list { display: grid; gap: 14px; margin-bottom: 18px; }
+
+/* Pastas nas Anotações Gerais */
+.notes-topbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; background: var(--bg2); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); }
+.note-folder-select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: var(--radius-sm); font-size: 0.85rem; outline: none; min-width: 150px; }
+#notes-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+#notes-list .note-card { min-height: 220px; }
+#notes-list .note-card-body { gap: 12px; }
+
+/* ===== AGENDA ===== */
+.agenda-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.agenda-day { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.agenda-day-header { padding: 8px 12px; background: var(--bg3); font-size: 0.78rem; font-weight: 600; color: var(--text2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.agenda-day-header.today { background: var(--accent-bg); color: var(--accent); }
+.agenda-events { padding: 8px; min-height: 80px; }
+.agenda-event { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px; background: var(--bg3); font-size: 0.8rem; cursor: pointer; transition: background 0.15s; }
+.agenda-event:hover { background: var(--bg4); }
+.agenda-event-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.agenda-event-text { flex: 1; line-height: 1.4; }
+.agenda-add-btn { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; color: var(--text3); font-size: 0.75rem; margin: 4px; transition: all 0.15s; width: calc(100% - 8px); }
+.agenda-add-btn:hover { background: var(--bg3); color: var(--accent); }
+
+/* ===== STATS ===== */
+.stats-row { display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; flex: 1; min-width: 110px; }
+.stat-value { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 0.75rem; color: var(--text2); font-weight: 500; margin-top: 2px; }
+
+/* ===== VIEW TOGGLE & TOOLBAR ===== */
+.view-toggle { display: flex; gap: 4px; background: var(--bg3); border-radius: 8px; padding: 3px; }
+.vt-btn { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text3); transition: all 0.15s; }
+.vt-btn.active { background: var(--bg2); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.vt-btn svg { width: 15px; height: 15px; }
+.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.section-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; margin-bottom: 14px; }
+
+/* ===== IMAGES PREVIEW ===== */
+.img-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 8px; }
+.img-preview-item { aspect-ratio: 1.1; border-radius: 12px; overflow: hidden; position: relative; background: var(--bg3); }
+.img-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.img-preview-item .remove-img { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.6); color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.img-preview-item:hover .remove-img { opacity: 1; }
+.upload-img-area { border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-top: 8px; }
+.upload-img-area:hover { border-color: var(--accent); background: var(--accent-bg); }
+.upload-img-area p { font-size: 0.8rem; color: var(--text2); margin-top: 6px; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
+.empty-state svg { width: 48px; height: 48px; margin: 0 auto 14px; opacity: 0.4; }
+.empty-state h3 { font-size: 1rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.empty-state p { font-size: 0.83rem; }
+.folder-note-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.folder-body-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 18px; margin-bottom: 20px; }
+.folder-panel { display: flex; flex-direction: column; gap: 14px; }
+@media (max-width: 980px) { .folder-body-grid { grid-template-columns: 1fr; } }
+@media (max-width: 780px) { .folder-note-row { grid-template-columns: 1fr; } .agenda-grid { grid-template-columns: 1fr; } }
+.note-images-section { padding: 8px 14px 14px; border-top: 1px solid var(--border); }
+.hl { background: var(--accent-bg); color: var(--accent); border-radius: 2px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fadeIn 0.25s ease; }
+
+/* ===== CONFIRM DELETE ===== */
+.confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400; display: none; align-items: center; justify-content: center; }
+.confirm-overlay.open { display: flex; }
+.confirm-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 320px; text-align: center; }
+.confirm-box p { font-size: 0.9rem; color: var(--text2); margin: 10px 0 20px; }
+.color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; }
+.swatch:hover, .swatch.active { transform: scale(1.2); border-color: var(--text); }
+.export-area { display: flex; gap: 10px; padding: 16px; background: var(--bg3); border-radius: var(--radius); align-items: center; margin-bottom: 14px; }
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">Study<span>Nest</span></div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Colapsar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19l-7-7 7-7M18 19l-7-7 7-7"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-nav">
+    <div style="height:8px"></div>
+    <div class="nav-item active" onclick="showPage('home')" id="nav-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Início</span>
+    </div>
+    <div class="nav-item" onclick="showPage('agenda')" id="nav-agenda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Agenda</span>
+    </div>
+    <div class="nav-item" onclick="showPage('notes')" id="nav-notes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Anotações Gerais</span>
+    </div>
+    <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      <span>Dados & Sync</span>
+    </div>
+
+    <div class="sidebar-section">Pastas</div>
+    <div id="folder-list"></div>
+
+    <button class="add-folder-btn" onclick="openAddFolderModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Nova pasta</span>
+    </button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div id="page-title">Início</div>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search-input" placeholder="Buscar links..." oninput="handleSearch()" />
+    </div>
+    <div class="topbar-btn" style="position:relative" onclick="toggleThemeDropdown()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <div class="theme-dropdown" id="theme-dropdown">
+        <div class="theme-opt" onclick="setTheme('dark')"><div class="theme-dot" style="background:#161619;border-color:#7c6ff7"></div>Noite Escura</div>
+        <div class="theme-opt" onclick="setTheme('light')"><div class="theme-dot" style="background:#f7f6f3;border-color:#6b5ce7"></div>Luz do Dia</div>
+        <div class="theme-opt" onclick="setTheme('sepia')"><div class="theme-dot" style="background:#f4efe8;border-color:#c07a3a"></div>Sépia</div>
+        <div class="theme-opt" onclick="setTheme('forest')"><div class="theme-dot" style="background:#0d1512;border-color:#4ec97a"></div>Floresta</div>
+        <div class="theme-opt" onclick="setTheme('night-blue')"><div class="theme-dot" style="background:#090c14;border-color:#4d9ef7"></div>Azul Noturno</div>
+        <div class="theme-opt" onclick="setTheme('rose')"><div class="theme-dot" style="background:#fdf2f4;border-color:#d44e6e"></div>Rosé</div>
+      </div>
+    </div>
+    <button class="topbar-btn" onclick="openAddLinkModal()" title="Adicionar link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+      <div class="stats-row" id="home-stats"></div>
+      <div class="folder-note-row">
+        <div class="note-card">
+          <div class="note-card-header">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span class="note-card-title">Anotação Rápida Solta</span>
+          </div>
+          <textarea class="note-textarea" id="home-note" placeholder="Escreva aqui pensamentos, ideias..." oninput="saveHomeNote()"></textarea>
+          <div class="note-images-section">
+            <div class="img-preview-grid" id="home-note-imgs"></div>
+            <div class="upload-img-area" onclick="document.getElementById('home-img-upload').click()" style="margin-top:8px">
+              <p>Clique para anexar imagem</p>
+            </div>
+            <input type="file" id="home-img-upload" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event,'home')">
+          </div>
+        </div>
+        <div>
+          <!-- NOVIDADE: Próximo Evento inserido ao lado dos recentes para não deixar tão vazio -->
+          <div id="home-next-event" style="margin-bottom: 20px;"></div>
+          
+          <div class="section-title">Recentes</div>
+          <div id="recent-links"></div>
+        </div>
+      </div>
+      <div class="section-title">Todas as Pastas</div>
+      <!-- Ajustado para minmax(320px) para as pastas ficarem ainda maiores na tela inicial como solicitado -->
+      <div id="home-folders-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;"></div>
+    </div>
+
+    <!-- FOLDER PAGE -->
+    <div class="page" id="page-folder">
+      <div class="folder-header" id="folder-header"></div>
+      <div class="folder-note-row">
+        <div class="note-card">
+          <div class="note-card-header">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span class="note-card-title">Nota da Pasta</span>
+          </div>
+          <textarea class="note-textarea" id="folder-note" placeholder="Anotações sobre esta pasta..." oninput="saveFolderNote()"></textarea>
+          <div class="note-images-section">
+            <div class="img-preview-grid" id="folder-note-imgs"></div>
+            <div class="upload-img-area" onclick="document.getElementById('folder-img-upload').click()">
+              <p>Anexar imagem à nota</p>
+            </div>
+            <input type="file" id="folder-img-upload" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event,'folder')">
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="note-card" style="flex:1">
+            <div class="note-card-header">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span class="note-card-title">Lembrete da Pasta</span>
+            </div>
+            <textarea class="note-textarea" id="folder-reminder" style="min-height:80px" placeholder="Lembretes para esta pasta..." oninput="saveFolderReminder()"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="folder-body-grid">
+        <div class="folder-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="section-title" style="margin-bottom:0">Notas da Pasta</div>
+            <button class="btn btn-primary" style="padding:8px 12px;font-size:0.8rem" onclick="addFolderNote()">+ Nova anotação</button>
+          </div>
+          <div id="folder-notes-list"></div>
+        </div>
+        <div class="folder-panel">
+          <div class="toolbar">
+            <div class="section-title" style="margin-bottom:0">Links</div>
+            <div class="toolbar-right">
+              <div class="view-toggle">
+                <button class="vt-btn active" id="vt-grid" onclick="setView('grid')" title="Grade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+                <button class="vt-btn" id="vt-list" onclick="setView('list')" title="Lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+              </div>
+              <button class="btn btn-primary" onclick="openAddLinkModal()" style="padding:8px 12px;font-size:0.8rem">+ Novo link</button>
+            </div>
+          </div>
+          <div id="folder-links-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES PAGE -->
+    <div class="page" id="page-notes">
+      <div class="section-title">Anotações Gerais</div>
+      <!-- NOVIDADE: Barra superior para pastas de notas -->
+      <div class="notes-topbar">
+        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text2)">Pasta:</label>
+        <select class="note-folder-select" id="notes-filter-folder" onchange="renderGeneralNotes()">
+          <option value="">Todas as Anotações</option>
+        </select>
+        <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.75rem;" onclick="addNoteFolder()">+ Nova Pasta</button>
+        <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; color:#e24b4a; margin-left:auto" onclick="deleteCurrentNoteFolder()" id="btn-del-note-folder" style="display:none">Excluir Pasta</button>
+      </div>
+
+      <div id="notes-list"></div>
+      <button class="btn btn-primary" onclick="addGeneralNote()" style="margin-top:8px">+ Nova anotação</button>
+    </div>
+
+    <!-- AGENDA PAGE -->
+    <div class="page" id="page-agenda">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <div class="section-title" style="margin-bottom:0">Agenda Semanal</div>
+        <button class="btn btn-ghost" onclick="prevWeek()" style="padding:5px 10px">← Anterior</button>
+        <span id="agenda-week-label" style="font-size:0.82rem;color:var(--text2);min-width:160px;text-align:center"></span>
+        <button class="btn btn-ghost" onclick="nextWeek()" style="padding:5px 10px">Próxima →</button>
+        <button class="btn btn-primary" style="margin-left:auto;padding:6px 14px;font-size:0.8rem" onclick="openAddEventModal()">+ Evento</button>
+      </div>
+      <div class="agenda-grid" id="agenda-grid"></div>
+      <div style="margin-top:20px">
+        <div class="section-title">Notas da Agenda</div>
+        <div class="note-card">
+          <textarea class="note-textarea" id="agenda-note" style="min-height:100px" placeholder="Anotações gerais sobre sua semana de estudos..." oninput="saveAgendaNote()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE (INTACTA) -->
+    <div class="page" id="page-settings">
+      <div class="section-title">Dados & Sincronização</div>
+      <p style="font-size:0.85rem;color:var(--text2);margin-bottom:18px">Exporte seus dados para acessar em qualquer computador. Importe para restaurar.</p>
+      <div class="export-area">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <div style="flex:1">
+          <div style="font-size:0.88rem;font-weight:600">Exportar Dados</div>
+          <div style="font-size:0.78rem;color:var(--text2)">Baixe um arquivo JSON com todos os seus links, anotações e eventos</div>
+        </div>
+        <button class="btn btn-primary" onclick="exportData()">Exportar</button>
+      </div>
+      <div class="export-area">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="flex:1">
+          <div style="font-size:0.88rem;font-weight:600">Importar Dados</div>
+          <div style="font-size:0.78rem;color:var(--text2)">Restaure um backup exportado anteriormente (substitui dados atuais)</div>
+        </div>
+        <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">Importar</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
+      <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:18px">
+        <button class="btn btn-danger" onclick="clearAllData()">Limpar todos os dados</button>
+      </div>
+    </div>
+
+    <!-- SEARCH PAGE -->
+    <div class="page" id="page-search">
+      <div class="section-title" id="search-title">Resultados</div>
+      <div id="search-results"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- QUICK NOTE FAB -->
+<button id="quick-note-fab" onclick="toggleQuickNote()" title="Nota rápida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+<div id="quick-note-panel">
+  <div class="qnp-header"><span>Nota Rápida</span><button onclick="toggleQuickNote()" style="color:var(--text3)">✕</button></div>
+  <textarea id="quick-note-text" placeholder="Capture uma ideia rápida..." oninput="saveQuickNote()"></textarea>
+</div>
+
+<!-- ADD LINK MODAL -->
+<div class="modal-overlay" id="modal-add-link">
+  <div class="modal">
+    <h2 id="link-modal-title">Adicionar Link</h2>
+    <input type="hidden" id="edit-link-id">
+    <div class="form-group">
+      <label>URL *</label>
+      <input type="url" id="link-url" placeholder="https://youtube.com/..." oninput="autoFillTitle()">
+    </div>
+    <div class="form-group"><label>Título</label><input type="text" id="link-title" placeholder="Nome do link"></div>
+    <div class="form-group"><label>Anotação Curta</label><textarea id="link-note" placeholder="O que é este link? Por que é útil?"></textarea></div>
+    <div class="form-group"><label>Tags (separadas por vírgula)</label><input type="text" id="link-tags" placeholder="react, tutorial, importante"></div>
+    <div class="form-group">
+      <label>Pasta</label>
+      <select id="link-folder"><option value="">Sem pasta</option></select>
+    </div>
+    <div class="form-group">
+      <label>Imagens Anexadas</label>
+      <div class="img-preview-grid" id="link-modal-imgs"></div>
+      <div class="upload-img-area" onclick="document.getElementById('link-img-upload').click()"><p>Clique para anexar imagem</p></div>
+      <input type="file" id="link-img-upload" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event,'link-modal')">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-link')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveLink()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD FOLDER MODAL (ORIGINAL, INTACTA) -->
+<div class="modal-overlay" id="modal-add-folder">
+  <div class="modal">
+    <h2 id="folder-modal-title">Nova Pasta</h2>
+    <input type="hidden" id="edit-folder-id">
+    <div class="form-group"><label>Nome *</label><input type="text" id="folder-name-input" placeholder="Ex: Desenvolvimento Web"></div>
+    <div class="form-group"><label>Descrição</label><input type="text" id="folder-desc-input" placeholder="Opcional"></div>
+    <div class="form-group"><label>Emoji (ícone)</label><input type="text" id="folder-emoji-input" placeholder="📚" maxlength="4" style="width:80px"></div>
+    <div class="form-group">
+      <label>Imagem da Pasta</label>
+      <div id="folder-img-preview" class="img-preview-grid"></div>
+      <div class="upload-img-area" onclick="document.getElementById('folder-cover-upload').click()"><p>Clique para enviar imagem de capa</p></div>
+      <input type="file" id="folder-cover-upload" accept="image/*" style="display:none" onchange="handleFolderCover(event)">
+    </div>
+    <div class="form-group">
+      <label>Cor do tema</label>
+      <div class="color-swatches" id="folder-color-swatches">
+        <div class="swatch active" style="background:#7c6ff7" data-color="#7c6ff7" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#4ec97a" data-color="#4ec97a" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#4d9ef7" data-color="#4d9ef7" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#ef9f27" data-color="#ef9f27" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#d44e6e" data-color="#d44e6e" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#5dcaa5" data-color="#5dcaa5" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#e24b4a" data-color="#e24b4a" onclick="selectFolderColor(this)"></div>
+        <div class="swatch" style="background:#888780" data-color="#888780" onclick="selectFolderColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-folder')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFolder()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EVENT MODAL (ORIGINAL) -->
+<div class="modal-overlay" id="modal-add-event">
+  <div class="modal">
+    <h2>Novo Evento</h2>
+    <input type="hidden" id="edit-event-id">
+    <div class="form-group"><label>Título *</label><input type="text" id="event-title" placeholder="Ex: Revisar capítulo 3"></div>
+    <div class="form-group"><label>Data *</label><input type="date" id="event-date"></div>
+    <div class="form-group"><label>Horário</label><input type="time" id="event-time"></div>
+    <div class="form-group"><label>Descrição</label><textarea id="event-desc" placeholder="Detalhes do evento..."></textarea></div>
+    <div class="form-group">
+      <label>Cor</label>
+      <div class="color-swatches" id="event-color-swatches">
+        <div class="swatch active" style="background:#7c6ff7" data-color="#7c6ff7" onclick="selectEventColor(this)"></div>
+        <div class="swatch" style="background:#4ec97a" data-color="#4ec97a" onclick="selectEventColor(this)"></div>
+        <div class="swatch" style="background:#4d9ef7" data-color="#4d9ef7" onclick="selectEventColor(this)"></div>
+        <div class="swatch" style="background:#ef9f27" data-color="#ef9f27" onclick="selectEventColor(this)"></div>
+        <div class="swatch" style="background:#d44e6e" data-color="#d44e6e" onclick="selectEventColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-event')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOVIDADE: MODAL PARA ANOTAÇÕES DO LINK ESPECÍFICO (RICH TEXT) -->
+<div class="modal-overlay" id="modal-link-note">
+  <div class="modal" style="max-width: 700px;">
+    <h2>Anotações do Link</h2>
+    <p id="link-note-subtitle" style="font-size: 0.85rem; color: var(--text2); margin-top: -12px; margin-bottom: 16px;"></p>
+    <input type="hidden" id="link-note-id">
+    
+    <div class="editor-wrapper" style="border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+      <div class="editor-toolbar">
+        <button class="editor-btn" onclick="execCmd('bold')" onmousedown="event.preventDefault()" title="Negrito"><b>B</b></button>
+        <button class="editor-btn" onclick="execCmd('italic')" onmousedown="event.preventDefault()" title="Itálico"><i>I</i></button>
+        <div style="width: 1px; background: var(--border); margin: 0 4px;"></div>
+        <button class="editor-btn highlight-btn" onclick="toggleHighlight()" onmousedown="event.preventDefault()" title="Grifar">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 11h-8v-2h8v2zm-10-6h12v-2h-12v2zm12 10h-12v2h12v-2z"/></svg>
+        </button>
+        <button class="editor-btn" onclick="execCmd('insertUnorderedList')" onmousedown="event.preventDefault()" title="Lista">ul</button>
+      </div>
+      <div id="link-rich-note" class="rich-editor" contenteditable="true" data-placeholder="Faça anotações detalhadas sobre este link..."></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-link-note')">Fechar</button>
+      <button class="btn btn-success" onclick="saveLinkRichNote()" id="btn-save-link-note">Salvar Anotação</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE (ORIGINAL) -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div style="font-size:1.5rem">🗑️</div>
+    <p id="confirm-message">Tem certeza que deseja excluir?</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-action-btn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== ESTADO (COM AS NOVIDADES) =====
+let state = {
+  folders: [],
+  links: [],
+  noteFolders: [], // Novidade: Pastas para anotações
+  notes: [],
+  folderNotes: [], // Notas dentro de cada pasta
+  events: [],
+  homeNote: '',
+  homeNoteImgs: [],
+  quickNote: '',
+  agendaNote: '',
+  theme: 'dark',
+};
+
+let currentFolder = null;
+let currentView = 'grid';
+let currentWeekOffset = 0;
+let editingNoteId = null;
+let editingFolderNoteId = null;
+let tempImages = [];
+let folderCoverImg = '';
+let selectedFolderColor = '#7c6ff7';
+let selectedEventColor = '#7c6ff7';
+let confirmCallback = null;
+
+// ===== LOAD/SAVE (ORIGINAL) =====
+function loadState() {
+  try {
+    const s = localStorage.getItem('studynest');
+    if (s) {
+        state = { ...state, ...JSON.parse(s) };
+        if(!state.noteFolders) state.noteFolders = []; // Garante compatibilidade com dados antigos
+        if(!state.folderNotes) state.folderNotes = []; // Garante compatibilidade com dados antigos
+    }
+  } catch(e) {}
+}
+function saveState() {
+  localStorage.setItem('studynest', JSON.stringify(state));
+}
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function init() {
+  loadState();
+  setTheme(state.theme || 'dark', false);
+  document.getElementById('home-note').value = state.homeNote || '';
+  document.getElementById('quick-note-text').value = state.quickNote || '';
+  document.getElementById('agenda-note').value = state.agendaNote || '';
+  renderSidebar();
+  renderHomePage();
+  renderAgenda();
+  updateNoteFolderSelects();
+  renderGeneralNotes();
+}
+
+// ===== THEME (ORIGINAL) =====
+function setTheme(t, save=true) {
+  document.body.setAttribute('data-theme', t);
+  state.theme = t;
+  if (save) saveState();
+  document.getElementById('theme-dropdown').classList.remove('open');
+}
+function toggleThemeDropdown() { document.getElementById('theme-dropdown').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('.topbar-btn')) document.getElementById('theme-dropdown').classList.remove('open');
+});
+
+// ===== SIDEBAR (ORIGINAL) =====
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+function renderSidebar() {
+  const list = document.getElementById('folder-list');
+  list.innerHTML = state.folders.map(f => `
+    <div class="folder-item ${currentFolder===f.id?'active':''}" onclick="openFolder('${f.id}')">
+      <div class="folder-icon" style="background:${f.color}22;border:1px solid ${f.color}44">
+        ${f.coverImg ? `<img src="${f.coverImg}" alt="">` : `<span>${f.emoji||'📁'}</span>`}
+      </div>
+      <div class="folder-info">
+        <div class="folder-name" style="color:${currentFolder===f.id?f.color:''}">${f.name}</div>
+        <div class="folder-count">${state.links.filter(l=>l.folderId===f.id).length} links</div>
+      </div>
+    </div>
+  `).join('');
+
+  const sel = document.getElementById('link-folder');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Sem pasta</option>' + state.folders.map(f =>
+      `<option value="${f.id}" ${cur===f.id?'selected':''}>${f.emoji||'📁'} ${f.name}</option>`
+    ).join('');
+  }
+}
+
+// ===== PAGES (ORIGINAL) =====
+function showPage(page, title) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if (document.getElementById('nav-'+page)) document.getElementById('nav-'+page).classList.add('active');
+  document.getElementById('page-title').textContent = title || {
+    home: 'Início', agenda: 'Agenda', notes: 'Anotações', settings: 'Dados & Sync', search: 'Busca'
+  }[page] || page;
+  currentFolder = page === 'folder' ? currentFolder : null;
+}
+
+function openFolder(id) {
+  currentFolder = id;
+  const f = state.folders.find(x => x.id === id);
+  if (!f) return;
+  showPage('folder', f.name);
+  renderSidebar();
+  renderFolderPage(f);
+  document.getElementById('folder-note').value = f.note || '';
+  document.getElementById('folder-reminder').value = f.reminder || '';
+  renderNoteImages('folder-note-imgs', f.noteImgs || []);
+}
+
+// ===== RENDER HOME (COM PASTAS MAIORES E EVENTO) =====
+function renderHomePage() {
+  const totalLinks = state.links.length;
+  const totalFolders = state.folders.length;
+  const totalNotes = state.notes.length;
+  const totalEvents = state.events.length;
+  document.getElementById('home-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${totalLinks}</div><div class="stat-label">Links Salvos</div></div>
+    <div class="stat-card"><div class="stat-value">${totalFolders}</div><div class="stat-label">Pastas</div></div>
+    <div class="stat-card"><div class="stat-value">${totalNotes}</div><div class="stat-label">Anotações</div></div>
+    <div class="stat-card"><div class="stat-value">${totalEvents}</div><div class="stat-label">Eventos</div></div>
+  `;
+  const recent = [...state.links].sort((a,b) => b.createdAt - a.createdAt).slice(0, 5);
+  const recentEl = document.getElementById('recent-links');
+  if (recent.length === 0) {
+    recentEl.innerHTML = '<p style="font-size:0.8rem;color:var(--text3)">Nenhum link ainda.</p>';
+  } else {
+    recentEl.innerHTML = '<div class="links-list">' + recent.map(l => renderLinkListItem(l)).join('') + '</div>';
+  }
+  
+  // Widget: Próximo Evento (Deixa a tela inicial menos simples)
+  const now = new Date();
+  const futureEvents = state.events.map(e => ({ ...e, dt: new Date(e.date + (e.time ? 'T'+e.time : '')) })).filter(e => e.dt >= now).sort((a,b) => a.dt - b.dt);
+  const evContainer = document.getElementById('home-next-event');
+  if (futureEvents.length > 0) {
+    const next = futureEvents[0];
+    evContainer.innerHTML = `<div style="background:var(--bg2); border-left:4px solid ${next.color||'var(--accent)'}; padding:14px; border-radius:var(--radius-sm); border-top:1px solid var(--border); border-right:1px solid var(--border); border-bottom:1px solid var(--border);">
+      <div style="font-size:0.75rem; color:var(--text3); text-transform:uppercase; font-weight:600; margin-bottom:4px">Próximo na Agenda</div>
+      <div style="font-weight:600">${next.title}</div>
+      <div style="font-size:0.8rem; color:var(--accent); margin-top:4px">⏰ ${next.dt.toLocaleString('pt-BR')}</div>
+    </div>`;
+  } else {
+    evContainer.innerHTML = '';
+  }
+
+  const fgrid = document.getElementById('home-folders-grid');
+  if (state.folders.length === 0) {
+    fgrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      <h3>Nenhuma pasta ainda</h3><p>Crie pastas para organizar seus links</p></div>`;
+  } else {
+    // Alterado para pastar ficarem maiores, com ícone e fonte um pouco maior.
+    fgrid.innerHTML = state.folders.map(f => {
+      const count = state.links.filter(l=>l.folderId===f.id).length;
+      return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;cursor:pointer;transition:all 0.2s;border-top:4px solid ${f.color}"
+        onclick="openFolder('${f.id}')" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+        <div style="width:64px;height:64px;border-radius:16px;background:${f.color}22;display:flex;align-items:center;justify-content:center;font-size:1.85rem;margin-bottom:16px;overflow:hidden">
+          ${f.coverImg ? `<img src="${f.coverImg}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">` : f.emoji||'📁'}
+        </div>
+        <div style="font-weight:600;font-size:1.12rem;margin-bottom:4px">${f.name}</div>
+        <div style="font-size:0.82rem;color:var(--text2)">${count} link${count!==1?'s':''}</div>
+        ${f.desc?`<div style="font-size:0.75rem;color:var(--text3);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.desc}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+  renderNoteImages('home-note-imgs', state.homeNoteImgs || []);
+}
+
+// ===== RENDER FOLDER PAGE (ORIGINAL) =====
+function renderFolderNotes() {
+  const list = document.getElementById('folder-notes-list');
+  if (!currentFolder) {
+    list.innerHTML = '';
+    return;
+  }
+  const notes = state.folderNotes.filter(n => n.folderId === currentFolder).sort((a,b) => b.createdAt - a.createdAt);
+  if (notes.length === 0) {
+    list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 10h16M4 14h10"/></svg><h3>Nenhuma anotação na pasta</h3><p>Use o botão acima para criar uma nota rápida.</p></div>`;
+    return;
+  }
+  list.innerHTML = notes.map(n => {
+    const isEditing = n.id === editingFolderNoteId;
+    const titleHtml = isEditing ? `<input type="text" value="${escapeHtml(n.title)}" id="folder-note-title-${n.id}" placeholder="Título da nota..." style="background:none;border:none;outline:none;font-size:0.95rem;font-weight:600;color:var(--text);flex:1;">` : `<div class="note-card-title">${escapeHtml(n.title) || '<em style="color:var(--text3)">Sem título</em>'}</div>`;
+    const contentHtml = isEditing ? `<textarea id="folder-note-content-${n.id}" class="note-textarea" style="min-height:100px">${escapeHtml(n.content)}</textarea>` : `<div class="note-card-note-view">${escapeHtml(n.content) || '<em style="color:var(--text3)">Sem conteúdo...</em>'}</div>`;
+    const actionsHtml = isEditing ? `<div class="note-card-actions"><button class="btn btn-success" title="Salvar" onclick="saveFolderNoteItem('${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg></button><button class="btn btn-ghost" title="Cancelar" onclick="cancelEditFolderNote()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><button class="btn btn-danger" title="Excluir" onclick="confirmDelete('folder-note','${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></div>` : `<div class="note-card-actions"><button class="btn btn-ghost" title="Editar" onclick="editFolderNoteItem('${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-danger" title="Excluir" onclick="confirmDelete('folder-note','${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></div>`;
+    return `<div class="note-card">
+        <div class="note-card-header">${titleHtml}${actionsHtml}</div>
+        <div class="note-card-body"><div class="note-card-main">${contentHtml}</div></div>
+      </div>`;
+  }).join('');
+}
+
+function addFolderNote() {
+  if (!currentFolder) return;
+  const note = { id: 'fn' + Date.now(), folderId: currentFolder, title: '', content: '', createdAt: Date.now() };
+  state.folderNotes.unshift(note);
+  editingFolderNoteId = note.id;
+  saveState();
+  renderFolderNotes();
+}
+
+function editFolderNoteItem(id) {
+  editingFolderNoteId = id;
+  renderFolderNotes();
+}
+
+function cancelEditFolderNote() {
+  editingFolderNoteId = null;
+  renderFolderNotes();
+}
+
+function saveFolderNoteItem(id) {
+  const note = state.folderNotes.find(n => n.id === id);
+  if (!note) return;
+  note.title = document.getElementById(`folder-note-title-${id}`).value;
+  note.content = document.getElementById(`folder-note-content-${id}`).value;
+  editingFolderNoteId = null;
+  saveState();
+  renderFolderNotes();
+}
+
+function renderFolderPage(f) {
+  const links = state.links.filter(l => l.folderId === f.id);
+  const header = document.getElementById('folder-header');
+  header.innerHTML = `
+    <div class="folder-header-icon" style="border-color:${f.color}44">
+      ${f.coverImg ? `<img src="${f.coverImg}" alt="">` : `<span style="font-size:1.5rem">${f.emoji||'📁'}</span>`}
+    </div>
+    <div class="folder-header-info">
+      <div class="folder-header-name">${f.name}</div>
+      ${f.desc?`<div class="folder-header-desc">${f.desc}</div>`:''}
+    </div>
+    <div class="folder-header-actions">
+      <button class="btn btn-ghost" onclick="openEditFolderModal('${f.id}')" style="padding:6px 12px;font-size:0.8rem">✏️ Editar</button>
+      <button class="btn btn-danger" onclick="confirmDelete('pasta','${f.id}')" style="padding:6px 12px;font-size:0.8rem">🗑️</button>
+    </div>
+  `;
+  const container = document.getElementById('folder-links-container');
+  if (links.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <h3>Nenhum link nesta pasta</h3>
+      <p>Adicione links para começar</p>
+    </div>`;
+  } else {
+    renderLinks(links, container);
+  }
+  renderFolderNotes();
+}
+
+function renderLinks(links, container) {
+  if (currentView === 'grid') container.innerHTML = `<div class="links-grid fade-in">${links.map(l => renderLinkCard(l)).join('')}</div>`;
+  else container.innerHTML = `<div class="links-list fade-in">${links.map(l => renderLinkListItem(l)).join('')}</div>`;
+}
+
+// ===== NOVIDADE: LÓGICA DE EMBED (PORTADO DO VUE) =====
+function transformarParaEmbed(url) {
+  if (!url) return null;
+  try {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const id = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/)?.[1];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (url.includes('linkedin.com')) {
+      const id = decodeURIComponent(url).match(/activity-(\d{10,20})/)?.[1];
+      return id ? `https://www.linkedin.com/embed/feed/update/urn:li:activity:${id}` : null;
+    }
+    if (url.includes('spotify.com')) {
+      return url.replace('open.spotify.com/', 'open.spotify.com/embed/');
+    }
+    if (url.includes('instagram.com/p/')) {
+      const cleanUrl = url.split('?')[0];
+      return `${cleanUrl}embed`;
+    }
+  } catch(e) {}
+  return null; 
+}
+
+function renderLinkCard(l) {
+  const favicon = getFavicon(l.url);
+  const tagsHtml = l.tags ? l.tags.split(',').filter(t=>t.trim()).map(t=>`<span class="tag">${t.trim()}</span>`).join('') : '';
+  const hasImgs = l.images && l.images.length > 0;
+  const embedUrl = transformarParaEmbed(l.url); // NOVIDADE APLICADA!
+  const hasRichNote = l.richNote && l.richNote.trim() !== '';
+
+  return `<div class="link-card fade-in">
+    ${embedUrl ? `
+      <div class="embed-container">
+        <iframe src="${embedUrl}" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+    ` : (hasImgs ? `<img src="${l.images[0]}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:14px">` : '')}
+    
+    <div class="link-card-header">
+      <div class="link-favicon">${favicon ? `<img src="${favicon}" alt="">` : getDomainInitial(l.url)}</div>
+      <div class="link-title-area">
+        <div class="link-title">${l.title || getDomain(l.url)}</div>
+        <div class="link-url">${getDomain(l.url)}</div>
+      </div>
+    </div>
+    ${l.note?`<div class="link-desc">${l.note}</div>`:''}
+    ${tagsHtml?`<div class="link-tags">${tagsHtml}</div>`:''}
+
+    <div class="link-card-btns">
+      <a href="${l.url}" target="_blank" class="link-card-btn primary" title="Abrir"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+      <button class="link-card-btn" title="Editar" onclick="openEditLinkModal('${l.id}')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="link-card-btn danger" title="Excluir" onclick="confirmDelete('link','${l.id}')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
+      <button class="link-card-btn" title="Notas" onclick="openLinkNoteModal('${l.id}')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8m-8 4h5"/></svg></button>
+    </div>
+
+    <div class="link-footer">
+      <span class="link-date">${formatDate(l.createdAt)}</span>
+      <div class="link-actions">
+        ${hasRichNote ? `<span style="font-size:0.78rem;color:var(--accent)">Notas salvas</span>` : `<span style="font-size:0.78rem;color:var(--text3)">Sem notas ainda</span>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderLinkListItem(l) {
+  const favicon = getFavicon(l.url);
+  return `<div class="link-list-item fade-in">
+    <div class="link-list-main">
+      <div class="link-favicon">${favicon ? `<img src="${favicon}" alt="">` : getDomainInitial(l.url)}</div>
+      <div class="link-list-text">
+        <div class="lli-title">${l.title || getDomain(l.url)}</div>
+        <div class="lli-url">${getDomain(l.url)}</div>
+      </div>
+    </div>
+    ${l.note?`<div class="lli-note">${l.note}</div>`:''}
+    <div class="link-list-actions">
+      <a href="${l.url}" target="_blank" class="link-action-btn" title="Abrir"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+      <button class="link-action-btn" title="Editar" onclick="openEditLinkModal('${l.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="link-action-btn del" title="Excluir" onclick="confirmDelete('link','${l.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
+      <button class="link-action-btn" title="Notas" onclick="openLinkNoteModal('${l.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8m-8 4h5"/></svg></button>
+    </div>
+  </div>`;
+}
+
+// ===== EDITOR RICH TEXT (FUNÇÕES) =====
+function execCmd(command, value = null) {
+  const editor = document.getElementById('link-rich-note');
+  if (editor) editor.focus();
+  document.execCommand(command, false, value);
+}
+function toggleHighlight() {
+  const editor = document.getElementById('link-rich-note');
+  if (editor) editor.focus();
+  const accentBg = getComputedStyle(document.documentElement).getPropertyValue('--accent-bg').trim() || '#f7f6f3';
+  document.execCommand('hiliteColor', false, accentBg);
+}
+
+// ===== NOVIDADE: ANOTAÇÕES COM PASTAS =====
+function updateNoteFolderSelects() {
+  const sel = document.getElementById('notes-filter-folder');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">Todas as Anotações</option>' + state.noteFolders.map(nf => 
+    `<option value="${nf.id}">${nf.name}</option>`
+  ).join('');
+  sel.value = currentVal; // Restaura seleção
+  
+  const btnDel = document.getElementById('btn-del-note-folder');
+  btnDel.style.display = sel.value ? 'block' : 'none';
+}
+
+function addNoteFolder() {
+  const name = prompt("Nome da nova pasta de anotações:");
+  if (name) {
+    state.noteFolders.push({ id: 'nf'+Date.now(), name });
+    saveState();
+    updateNoteFolderSelects();
+  }
+}
+
+function deleteCurrentNoteFolder() {
+  const sel = document.getElementById('notes-filter-folder');
+  const id = sel.value;
+  if(id && confirm("Excluir esta pasta? As notas não serão apagadas, mas ficarão sem pasta.")) {
+    state.noteFolders = state.noteFolders.filter(x => x.id !== id);
+    state.notes.forEach(n => { if(n.folderId === id) n.folderId = null; });
+    sel.value = "";
+    saveState();
+    updateNoteFolderSelects();
+    renderGeneralNotes();
+  }
+}
+
+function addGeneralNote() {
+  const currentFolderId = document.getElementById('notes-filter-folder').value || null;
+  const note = { id: 'n'+Date.now(), title: '', content: '', images: [], folderId: currentFolderId };
+  state.notes.unshift(note);
+  editingNoteId = note.id;
+  saveState();
+  renderGeneralNotes();
+}
+
+function editGeneralNote(id) {
+  editingNoteId = id;
+  renderGeneralNotes();
+}
+
+function cancelEditGeneralNote() {
+  editingNoteId = null;
+  renderGeneralNotes();
+}
+
+function renderGeneralNotes() {
+  const list = document.getElementById('notes-list');
+  const currentFolderId = document.getElementById('notes-filter-folder').value;
+  
+  const btnDel = document.getElementById('btn-del-note-folder');
+  if(btnDel) btnDel.style.display = currentFolderId ? 'block' : 'none';
+
+  let filteredNotes = state.notes;
+  if(currentFolderId) {
+    filteredNotes = state.notes.filter(n => n.folderId === currentFolderId);
+  }
+
+  if (filteredNotes.length === 0) {
+    list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <h3>Nenhuma anotação</h3><p>Crie notas de estudo, resumos...</p></div>`;
+    return;
+  }
+  
+  list.innerHTML = filteredNotes.map(n => {
+    const isEditing = editingNoteId === n.id;
+    const folderName = n.folderId ? (state.noteFolders.find(f => f.id === n.folderId)?.name || 'Sem pasta') : 'Sem pasta';
+    const titleValue = n.title || '';
+    const contentValue = n.content || '<em>Sem conteúdo...</em>';
+    const titleHtml = isEditing ? `<input type="text" value="${titleValue}" id="note-title-${n.id}" placeholder="Título da nota..." style="background:none;border:none;outline:none;font-size:0.95rem;font-weight:600;color:var(--text);flex:1;">` : `<div class="note-card-title">${titleValue || '<em style="color:var(--text3)">Sem título</em>'}</div>`;
+    const folderHtml = isEditing ? `<select id="note-folder-sel-${n.id}" style="background:var(--bg2); border:1px solid var(--border); border-radius:4px; font-size:0.75rem; color:var(--text2); padding:4px 6px; margin-right:8px; outline:none"><option value="">Sem pasta</option>${state.noteFolders.map(nf => `<option value="${nf.id}" ${nf.id === n.folderId ? 'selected' : ''}>${nf.name}</option>`).join('')}</select>` : `<div style="font-size:0.78rem;color:var(--text3);margin-left:auto;white-space:nowrap">${folderName}</div>`;
+    const actionsHtml = isEditing ? `<div class="note-card-actions"><button class="btn btn-success" onclick="saveSpecificGeneralNote('${n.id}')">Salvar</button><button class="btn btn-ghost" onclick="cancelEditGeneralNote()">Cancelar</button><button class="btn btn-ghost" onclick="confirmDelete('note','${n.id}')">✕</button></div>` : `<div class="note-card-actions"><button class="btn btn-ghost" onclick="editGeneralNote('${n.id}')">Editar</button><button class="btn btn-ghost" onclick="confirmDelete('note','${n.id}')">✕</button></div>`;
+    const editorArea = isEditing ? `
+        <div class="editor-wrapper" style="border:none; border-radius:0">
+          <div class="editor-toolbar">
+            <button class="editor-btn" onclick="execCmd('bold')" title="Negrito"><b>B</b></button>
+            <button class="editor-btn" onclick="execCmd('italic')" title="Itálico"><i>I</i></button>
+            <div style="width: 1px; background: var(--border); margin: 0 4px;"></div>
+            <button class="editor-btn highlight-btn" onclick="toggleHighlight()" title="Grifar"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 11h-8v-2h8v2zm-10-6h12v-2h-12v2zm12 10h-12v2h12v-2z"/></svg></button>
+            <button class="editor-btn" onclick="execCmd('insertUnorderedList')" title="Lista">ul</button>
+          </div>
+          <div class="rich-editor" id="note-content-${n.id}" contenteditable="true" data-placeholder="Escreva aqui...">${n.content || ''}</div>
+        </div>
+      ` : `<div class="note-card-note-view">${contentValue}</div>`;
+    const imageSection = `<div class="note-card-images">
+          <div class="img-preview-grid" id="note-imgs-${n.id}"></div>
+          ${isEditing ? `<div class="upload-img-area" onclick="document.getElementById('note-img-${n.id}').click()" style="margin-top:6px; padding:8px"><p style="font-size:0.75rem">+ Anexar imagem</p></div><input type="file" id="note-img-${n.id}" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event,'general-note','${n.id}')">` : ''}
+        </div>`;
+
+    return `
+      <div class="note-card" style="margin-bottom:12px">
+        <div class="note-card-header">
+          ${titleHtml}
+          ${folderHtml}
+          ${actionsHtml}
+        </div>
+        <div class="note-card-body">
+          <div class="note-card-main">${editorArea}</div>
+          ${isEditing || (n.images && n.images.length) ? imageSection : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  filteredNotes.forEach(n => renderNoteImages(`note-imgs-${n.id}`, n.images||[], false, n.id));
+}
+
+function saveSpecificGeneralNote(id) {
+  const n = state.notes.find(x => x.id === id);
+  if(n) {
+    n.title = document.getElementById(`note-title-${id}`).value;
+    n.content = document.getElementById(`note-content-${id}`).innerHTML;
+    n.folderId = document.getElementById(`note-folder-sel-${id}`).value || null;
+    saveState();
+    editingNoteId = null;
+    renderGeneralNotes();
+  }
+}
+
+// ===== LINK RICH NOTE MODAL =====
+function openLinkNoteModal(linkId) {
+  const link = state.links.find(l => l.id === linkId);
+  if(!link) return;
+  document.getElementById('link-note-subtitle').textContent = `Referente a: ${link.title}`;
+  document.getElementById('link-note-id').value = linkId;
+  document.getElementById('link-rich-note').innerHTML = link.richNote || '';
+  
+  const btn = document.getElementById('btn-save-link-note');
+  btn.textContent = "Salvar Anotação";
+  
+  openModal('modal-link-note');
+}
+
+function saveLinkRichNote() {
+  const linkId = document.getElementById('link-note-id').value;
+  const content = document.getElementById('link-rich-note').innerHTML;
+  const link = state.links.find(l => l.id === linkId);
+  if(link) {
+    link.richNote = content;
+    saveState();
+    const btn = document.getElementById('btn-save-link-note');
+    btn.textContent = "✓ Salvo!";
+    
+    // Atualiza o botão na UI
+    if(currentFolder) {
+       const f = state.folders.find(x=>x.id===currentFolder);
+       if(f) renderLinks(state.links.filter(l=>l.folderId===f.id), document.getElementById('folder-links-container'));
+    } else {
+       renderHomePage();
+    }
+    
+    setTimeout(() => { closeModal('modal-link-note'); }, 800);
+  }
+}
+
+// ===== AGENDA (ORIGINAL) =====
+const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function getWeekDates(offset=0) {
+  const today = new Date();
+  const day = today.getDay();
+  const start = new Date(today);
+  start.setDate(today.getDate() - day + offset * 7);
+  return Array.from({length:7}, (_,i) => { const d = new Date(start); d.setDate(start.getDate()+i); return d; });
+}
+function renderAgenda() {
+  const dates = getWeekDates(currentWeekOffset);
+  const start = dates[0], end = dates[6];
+  document.getElementById('agenda-week-label').textContent = `${start.getDate()} ${MONTHS[start.getMonth()]} – ${end.getDate()} ${MONTHS[end.getMonth()]} ${end.getFullYear()}`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const grid = document.getElementById('agenda-grid');
+  grid.innerHTML = dates.map(d => {
+    const dateStr = d.toISOString().slice(0,10);
+    const isToday = d.getTime() === today.getTime();
+    const events = state.events.filter(e => e.date === dateStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    return `<div class="agenda-day">
+      <div class="agenda-day-header ${isToday?'today':''}">
+        <span>${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}</span>
+        ${isToday?'<span style="font-size:0.65rem">Hoje</span>':''}
+      </div>
+      <div class="agenda-events" id="day-${dateStr}">
+        ${events.map(ev => `
+          <div class="agenda-event" onclick="deleteEvent('${ev.id}')">
+            <div class="agenda-event-dot" style="background:${ev.color||'#7c6ff7'}"></div>
+            <div class="agenda-event-text">
+              ${ev.time?`<span style="font-size:0.7rem;opacity:0.6">${ev.time} </span>`:''}${ev.title}
+            </div>
+          </div>
+        `).join('')}
+        <button class="agenda-add-btn" onclick="openAddEventModalDate('${dateStr}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('agenda-note').value = state.agendaNote || '';
+}
+function prevWeek() { currentWeekOffset--; renderAgenda(); }
+function nextWeek() { currentWeekOffset++; renderAgenda(); }
+function openAddEventModal() {
+  document.getElementById('edit-event-id').value = '';
+  document.getElementById('event-title').value = '';
+  document.getElementById('event-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('event-time').value = '';
+  document.getElementById('event-desc').value = '';
+  selectedEventColor = '#7c6ff7';
+  openModal('modal-add-event');
+}
+function openAddEventModalDate(dateStr) { openAddEventModal(); document.getElementById('event-date').value = dateStr; }
+function saveEvent() {
+  const title = document.getElementById('event-title').value.trim();
+  const date = document.getElementById('event-date').value;
+  if (!title || !date) { alert('Título e data são obrigatórios'); return; }
+  const editId = document.getElementById('edit-event-id').value;
+  const data = { id: editId||'e'+Date.now(), title, date, time: document.getElementById('event-time').value, desc: document.getElementById('event-desc').value.trim(), color: selectedEventColor };
+  if (editId) state.events = state.events.map(e=>e.id===editId?data:e);
+  else state.events.push(data);
+  saveState();
+  closeModal('modal-add-event');
+  renderAgenda();
+  if(currentFolder === null) renderHomePage();
+}
+function deleteEvent(id) {
+  if (!confirm('Excluir evento?')) return;
+  state.events = state.events.filter(e=>e.id!==id);
+  saveState(); renderAgenda();
+  if(currentFolder === null) renderHomePage();
+}
+function selectEventColor(el) {
+  document.querySelectorAll('#event-color-swatches .swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  selectedEventColor = el.dataset.color;
+}
+
+// ===== CRUD RESTANTE (ORIGINAL) =====
+function setView(v) {
+  currentView = v;
+  document.getElementById('vt-grid').classList.toggle('active', v==='grid');
+  document.getElementById('vt-list').classList.toggle('active', v==='list');
+  if (currentFolder) {
+    const f = state.folders.find(x => x.id === currentFolder);
+    if (f) renderLinks(state.links.filter(l => l.folderId === f.id), document.getElementById('folder-links-container'));
+  }
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+function openAddLinkModal() {
+  document.getElementById('link-modal-title').textContent = 'Adicionar Link';
+  document.getElementById('edit-link-id').value = '';
+  document.getElementById('link-url').value = '';
+  document.getElementById('link-title').value = '';
+  document.getElementById('link-note').value = '';
+  document.getElementById('link-tags').value = '';
+  tempImages = [];
+  document.getElementById('link-modal-imgs').innerHTML = '';
+  const sel = document.getElementById('link-folder');
+  sel.innerHTML = '<option value="">Sem pasta</option>' + state.folders.map(f =>
+    `<option value="${f.id}" ${f.id===currentFolder?'selected':''}>${f.emoji||'📁'} ${f.name}</option>`
+  ).join('');
+  openModal('modal-add-link');
+}
+function openEditLinkModal(id) {
+  const l = state.links.find(x => x.id === id);
+  if (!l) return;
+  document.getElementById('link-modal-title').textContent = 'Editar Link';
+  document.getElementById('edit-link-id').value = id;
+  document.getElementById('link-url').value = l.url;
+  document.getElementById('link-title').value = l.title || '';
+  document.getElementById('link-note').value = l.note || '';
+  document.getElementById('link-tags').value = l.tags || '';
+  tempImages = [...(l.images || [])];
+  renderNoteImages('link-modal-imgs', tempImages, true);
+  const sel = document.getElementById('link-folder');
+  sel.innerHTML = '<option value="">Sem pasta</option>' + state.folders.map(f =>
+    `<option value="${f.id}" ${f.id===l.folderId?'selected':''}>${f.emoji||'📁'} ${f.name}</option>`
+  ).join('');
+  openModal('modal-add-link');
+}
+function saveLink() {
+  const url = document.getElementById('link-url').value.trim();
+  if (!url) { alert('URL é obrigatória'); return; }
+  const editId = document.getElementById('edit-link-id').value;
+  const prevLink = state.links.find(x=>x.id===editId) || {};
+  const data = {
+    url, id: editId || 'l'+Date.now(),
+    title: document.getElementById('link-title').value.trim() || getDomain(url),
+    note: document.getElementById('link-note').value.trim(),
+    tags: document.getElementById('link-tags').value.trim(),
+    folderId: document.getElementById('link-folder').value,
+    images: [...tempImages],
+    richNote: prevLink.richNote || '',
+    createdAt: prevLink.createdAt || Date.now()
+  };
+  if (editId) state.links = state.links.map(l => l.id === editId ? data : l);
+  else state.links.push(data);
+  saveState(); closeModal('modal-add-link'); refreshCurrentView();
+}
+function autoFillTitle() {
+  const url = document.getElementById('link-url').value.trim();
+  if (url && !document.getElementById('link-title').value) document.getElementById('link-title').value = getDomain(url);
+}
+function openAddFolderModal() {
+  document.getElementById('folder-modal-title').textContent = 'Nova Pasta';
+  document.getElementById('edit-folder-id').value = '';
+  document.getElementById('folder-name-input').value = '';
+  document.getElementById('folder-desc-input').value = '';
+  document.getElementById('folder-emoji-input').value = '';
+  document.getElementById('folder-img-preview').innerHTML = '';
+  folderCoverImg = '';
+  selectedFolderColor = '#7c6ff7';
+  document.querySelectorAll('#folder-color-swatches .swatch').forEach(s => s.classList.remove('active'));
+  document.querySelector('#folder-color-swatches .swatch').classList.add('active');
+  openModal('modal-add-folder');
+}
+function openEditFolderModal(id) {
+  const f = state.folders.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('folder-modal-title').textContent = 'Editar Pasta';
+  document.getElementById('edit-folder-id').value = id;
+  document.getElementById('folder-name-input').value = f.name;
+  document.getElementById('folder-desc-input').value = f.desc || '';
+  document.getElementById('folder-emoji-input').value = f.emoji || '';
+  folderCoverImg = f.coverImg || '';
+  selectedFolderColor = f.color || '#7c6ff7';
+  if (folderCoverImg) document.getElementById('folder-img-preview').innerHTML = `<div class="img-preview-item"><img src="${folderCoverImg}" alt=""></div>`;
+  document.querySelectorAll('#folder-color-swatches .swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color === selectedFolderColor);
+  });
+  openModal('modal-add-folder');
+}
+function saveFolder() {
+  const name = document.getElementById('folder-name-input').value.trim();
+  if (!name) { alert('Nome é obrigatório'); return; }
+  const editId = document.getElementById('edit-folder-id').value;
+  const prevFolder = state.folders.find(x=>x.id===editId) || {};
+  const data = {
+    id: editId || 'f'+Date.now(),
+    name,
+    desc: document.getElementById('folder-desc-input').value.trim(),
+    emoji: document.getElementById('folder-emoji-input').value.trim() || '📁',
+    color: selectedFolderColor,
+    coverImg: folderCoverImg,
+    note: prevFolder.note || '',
+    noteImgs: prevFolder.noteImgs || [],
+    reminder: prevFolder.reminder || '',
+  };
+  if (editId) state.folders = state.folders.map(f => f.id === editId ? data : f);
+  else state.folders.push(data);
+  saveState(); closeModal('modal-add-folder'); renderSidebar(); renderHomePage();
+  if (editId && currentFolder === editId) openFolder(editId);
+}
+function selectFolderColor(el) {
+  document.querySelectorAll('#folder-color-swatches .swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  selectedFolderColor = el.dataset.color;
+}
+function handleFolderCover(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => { folderCoverImg = ev.target.result; document.getElementById('folder-img-preview').innerHTML = `<div class="img-preview-item"><img src="${folderCoverImg}" alt=""></div>`; };
+  r.readAsDataURL(file);
+}
+function saveHomeNote() { state.homeNote = document.getElementById('home-note').value; saveState(); }
+function saveFolderNote() { const f = state.folders.find(x=>x.id===currentFolder); if (f) { f.note = document.getElementById('folder-note').value; saveState(); } }
+function saveFolderReminder() { const f = state.folders.find(x=>x.id===currentFolder); if (f) { f.reminder = document.getElementById('folder-reminder').value; saveState(); } }
+function saveQuickNote() { state.quickNote = document.getElementById('quick-note-text').value; saveState(); }
+function saveAgendaNote() { state.agendaNote = document.getElementById('agenda-note').value; saveState(); }
+function toggleQuickNote() { document.getElementById('quick-note-panel').classList.toggle('open'); }
+function handleImageUpload(e, ctx, noteId) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const r = new FileReader();
+    r.onload = ev => {
+      const src = ev.target.result;
+      if (ctx === 'home') { state.homeNoteImgs = state.homeNoteImgs || []; state.homeNoteImgs.push(src); saveState(); renderNoteImages('home-note-imgs', state.homeNoteImgs); }
+      else if (ctx === 'folder') { const f = state.folders.find(x=>x.id===currentFolder); if (f) { f.noteImgs = f.noteImgs||[]; f.noteImgs.push(src); saveState(); renderNoteImages('folder-note-imgs', f.noteImgs); } }
+      else if (ctx === 'link-modal') { tempImages.push(src); renderNoteImages('link-modal-imgs', tempImages, true); }
+      else if (ctx === 'general-note') { const n = state.notes.find(x=>x.id===noteId); if (n) { n.images=n.images||[]; n.images.push(src); saveState(); renderNoteImages('note-imgs-'+noteId, n.images, false, noteId); } }
+    };
+    r.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+function renderNoteImages(containerId, imgs, isModal=false, noteId=null) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!imgs || imgs.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = imgs.map((src, i) => `<div class="img-preview-item"><img src="${src}" alt=""><div class="remove-img" onclick="removeImage('${containerId}',${i},'${isModal?'modal':''}','${noteId||''}')">✕</div></div>`).join('');
+}
+function removeImage(containerId, idx, ctx, noteId) {
+  if (ctx === 'modal') { tempImages.splice(idx, 1); renderNoteImages(containerId, tempImages, true); }
+  else if (containerId === 'home-note-imgs') { state.homeNoteImgs.splice(idx, 1); saveState(); renderNoteImages(containerId, state.homeNoteImgs); }
+  else if (containerId === 'folder-note-imgs') { const f = state.folders.find(x=>x.id===currentFolder); if (f) { f.noteImgs.splice(idx,1); saveState(); renderNoteImages(containerId, f.noteImgs); } }
+  else if (noteId) { const n = state.notes.find(x=>x.id===noteId); if (n) { n.images.splice(idx,1); saveState(); renderNoteImages(containerId, n.images, false, noteId); } }
+}
+function confirmDelete(type, id) {
+  if (type === 'folder-note') {
+    confirmCallback = () => {
+      state.folderNotes = state.folderNotes.filter(n => n.id !== id);
+      saveState();
+      renderFolderNotes();
+      closeConfirm();
+    };
+    openConfirm('Tem certeza que deseja excluir esta anotação da pasta?', confirmCallback);
+    return;
+  }
+  const msgs = { link: 'Excluir este link?', pasta: 'Excluir esta pasta e todos os seus links?', note: 'Excluir esta anotação?' };
+  document.getElementById('confirm-message').textContent = msgs[type] || 'Confirmar exclusão?';
+  confirmCallback = () => {
+    if (type === 'link') state.links = state.links.filter(l=>l.id!==id);
+    else if (type === 'pasta') { state.links = state.links.filter(l=>l.folderId!==id); state.folders = state.folders.filter(f=>f.id!==id); currentFolder = null; showPage('home'); renderHomePage(); }
+    else if (type === 'note') state.notes = state.notes.filter(n=>n.id!==id);
+    saveState(); renderSidebar(); renderHomePage(); refreshCurrentView();
+    if (type === 'note') renderGeneralNotes();
+    closeConfirm();
+  };
+  document.getElementById('confirm-action-btn').onclick = confirmCallback;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
+document.getElementById('confirm-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+function handleSearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  if (!q) { if (document.getElementById('page-search').classList.contains('active')) { showPage('home'); renderHomePage(); } return; }
+  showPage('search', 'Busca: '+q);
+  const results = state.links.filter(l => (l.title||'').toLowerCase().includes(q) || (l.url||'').toLowerCase().includes(q) || (l.note||'').toLowerCase().includes(q) || (l.tags||'').toLowerCase().includes(q));
+  document.getElementById('search-title').textContent = `${results.length} resultado(s) para "${q}"`;
+  const container = document.getElementById('search-results');
+  if (results.length === 0) container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><h3>Nenhum resultado</h3><p>Tente outras palavras-chave</p></div>`;
+  else container.innerHTML = `<div class="links-grid">${results.map(l => renderLinkCard(l)).join('')}</div>`;
+}
+
+// ===== EXPORT/IMPORT (ORIGINAL) =====
+function exportData() {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `studynest-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!confirm('Substituir todos os dados atuais pelo backup?')) return;
+      state = { ...state, ...d };
+      saveState(); init(); alert('Dados importados com sucesso!');
+    } catch { alert('Arquivo inválido.'); }
+  };
+  r.readAsText(file);
+  e.target.value = '';
+}
+function clearAllData() {
+  if (!confirm('ATENÇÃO: Isso apagará TODOS os seus dados. Tem certeza?')) return;
+  state = { folders:[], links:[], noteFolders: [], notes:[], events:[], homeNote:'', homeNoteImgs:[], quickNote:'', agendaNote:'', theme: state.theme };
+  saveState(); init();
+}
+function refreshCurrentView() {
+  if (currentFolder) { const f = state.folders.find(x=>x.id===currentFolder); if (f) renderFolderPage(f); } else renderHomePage();
+}
+function getDomain(url) { try { return new URL(url).hostname.replace('www.',''); } catch { return url; } }
+function getFavicon(url) { try { const u = new URL(url); return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`; } catch { return null; } }
+function getDomainInitial(url) { const d = getDomain(url); return d ? d[0].toUpperCase() : '?'; }
+function formatDate(ts) { if (!ts) return ''; const d = new Date(ts); return d.toLocaleDateString('pt-BR'); }
+init();
+</script>
+</body>
+</html>
