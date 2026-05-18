@@ -145,7 +145,10 @@ body {
 
 #app {
   display: flex;
+  flex-direction: row;
+  align-items: stretch;
   width: 100%;
+  min-height: 100vh;
 }
 
 button {
