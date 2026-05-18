@@ -1182,6 +1182,32 @@ a {
   margin-bottom: 14px;
 }
 
+.image-card {
+  background: var(--link-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  margin-bottom: 14px;
+}
+
+.image-placeholder {
+  width: 100%;
+  min-height: 180px;
+  border: 2px dashed var(--border);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  background: var(--bg3);
+  text-align: center;
+  padding: 18px;
+}
+
 .note-card-header {
   padding: 10px 14px;
   background: var(--bg3);

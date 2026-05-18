@@ -85,8 +85,10 @@
             </div>
             <div>
               <div id="home-next-event" style="margin-bottom: 20px;"></div>
-              <div class="section-title">Recentes</div>
-              <div id="recent-links"></div>
+              <div class="section-title">Imagem</div>
+              <div class="image-card">
+                <div class="image-placeholder">Coloque sua imagem aqui</div>
+              </div>
             </div>
           </div>
           <div class="section-title">Todas as Pastas</div>
