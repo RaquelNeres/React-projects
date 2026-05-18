@@ -85,9 +85,10 @@
             </div>
             <div>
               <div id="home-next-event" style="margin-bottom: 20px;"></div>
-              <div class="section-title">Imagem</div>
-              <div class="image-card">
-                <div class="image-placeholder">Coloque sua imagem aqui</div>
+              <div class="section-title">Versículo</div>
+              <div class="verse-card">
+                <p class="verse-text">“Pois nem mesmo o Filho do homem veio para ser servido, mas para servir e dar a sua vida em resgate por muitos.”</p>
+                <p class="verse-ref">Marcos 10:45</p>
               </div>
             </div>
           </div>
