@@ -139,7 +139,7 @@ body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
-  overflow: hidden;
+  overflow: auto;
   transition: background 0.3s, color 0.3s;
 }
 
