@@ -154,7 +154,7 @@
               <option value="">Todas as Anotações</option>
             </select>
             <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.75rem;" onclick="addNoteFolder()">+ Nova Pasta</button>
-            <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; color:#e24b4a; margin-left:auto" onclick="deleteCurrentNoteFolder()" id="btn-del-note-folder" style="display:none">Excluir Pasta</button>
+            <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; color:#e24b4a; margin-left:auto; display:none;" onclick="deleteCurrentNoteFolder()" id="btn-del-note-folder">Excluir Pasta</button>
           </div>
 
           <div id="notes-list"></div>
