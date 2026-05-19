@@ -1286,7 +1286,18 @@ a {
   font-size: 0.875rem;
   line-height: 1.7;
   min-height: 130px;
+  max-height: 220px;
+  overflow-y: auto;
   color: var(--text);
+}
+
+.note-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.note-textarea::-webkit-scrollbar-thumb {
+  background: rgba(144, 144, 168, 0.35);
+  border-radius: 999px;
 }
 
 .editor-toolbar {
