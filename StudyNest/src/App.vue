@@ -108,9 +108,6 @@
               <textarea class="note-textarea" id="folder-note" placeholder="Anotações sobre esta pasta..." oninput="saveFolderNote()"></textarea>
               <div class="note-images-section">
                 <div class="img-preview-grid" id="folder-note-imgs"></div>
-                <div class="upload-img-area" onclick="document.getElementById('folder-img-upload').click()">
-                  <p>Anexar imagem à nota</p>
-                </div>
                 <input type="file" id="folder-img-upload" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event,'folder')" />
               </div>
             </div>
@@ -120,7 +117,7 @@
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   <span class="note-card-title">Lembrete da Pasta</span>
                 </div>
-                <textarea class="note-textarea" id="folder-reminder" placeholder="Lembretes para esta pasta..." oninput="saveFolderReminder()"></textarea>
+                <textarea class="note-textarea" id="folder-reminder" data-max-lines="9" style="min-height:220px" placeholder="Lembretes para esta pasta..." oninput="saveFolderReminder()"></textarea>
               </div>
             </div>
           </div>

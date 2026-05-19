@@ -987,6 +987,11 @@ export function saveQuickNote() {
 
 function limitTextareaInput(el) {
   if (!el) return;
+  const maxLines = parseInt(el.dataset.maxLines, 10);
+  if (maxLines && el.value.split(/\r\n|\r|\n/).length > maxLines) {
+    el.value = el.dataset.lastValid || '';
+    return false;
+  }
   if (el.scrollHeight > el.clientHeight + 2) {
     el.value = el.dataset.lastValid || '';
     return false;
@@ -1018,6 +1023,27 @@ export function toggleQuickNote() {
 
 export function handleImageUpload(e, ctx, noteId) {
   const files = Array.from(e.target.files || []);
+  if (ctx === 'folder') {
+    const f = state.folders.find(x => x.id === currentFolder);
+    if (!f) {
+      e.target.value = '';
+      return;
+    }
+    f.noteImgs = f.noteImgs || [];
+    const allowed = Math.max(0, 4 - f.noteImgs.length);
+    files.slice(0, allowed).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        f.noteImgs.push(ev.target.result);
+        saveState();
+        renderNoteImages('folder-note-imgs', f.noteImgs);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+    return;
+  }
+
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = ev => {
@@ -1027,14 +1053,6 @@ export function handleImageUpload(e, ctx, noteId) {
         state.homeNoteImgs.push(src);
         saveState();
         renderNoteImages('home-note-imgs', state.homeNoteImgs);
-      } else if (ctx === 'folder') {
-        const f = state.folders.find(x => x.id === currentFolder);
-        if (f) {
-          f.noteImgs = f.noteImgs || [];
-          f.noteImgs.push(src);
-          saveState();
-          renderNoteImages('folder-note-imgs', f.noteImgs);
-        }
       } else if (ctx === 'link-modal') {
         tempImages.push(src);
         renderNoteImages('link-modal-imgs', tempImages, true);
@@ -1057,6 +1075,10 @@ export function renderNoteImages(containerId, imgs, isModal = false, noteId = nu
   const el = document.getElementById(containerId);
   if (!el) return;
   if (!imgs || imgs.length === 0) {
+    if (containerId === 'folder-note-imgs') {
+      el.innerHTML = `<div class="img-preview-item upload-img-thumb" onclick="document.getElementById('folder-img-upload').click()"><span>+</span></div>`;
+      return;
+    }
     el.innerHTML = '';
     return;
   }
@@ -1065,6 +1087,9 @@ export function renderNoteImages(containerId, imgs, isModal = false, noteId = nu
       (src, i) => `<div class="img-preview-item"><img src="${src}" alt="" onclick="openImagePreview('${encodeURIComponent(src)}')"><div class="remove-img" onclick="removeImage('${containerId}',${i},'${isModal ? 'modal' : ''}','${noteId || ''}')">✕</div></div>`,
     )
     .join('');
+  if (containerId === 'folder-note-imgs' && imgs.length < 4) {
+    el.innerHTML += `<div class="img-preview-item upload-img-thumb" onclick="document.getElementById('folder-img-upload').click()"><span>+</span></div>`;
+  }
 }
 
 export function openImagePreview(encodedSrc) {
