@@ -952,33 +952,62 @@ export function handleFolderCover(e) {
 }
 
 export function saveHomeNote() {
-  state.homeNote = document.getElementById('home-note')?.value || '';
+  const textarea = document.getElementById('home-note');
+  if (textarea) limitTextareaInput(textarea);
+  state.homeNote = textarea?.value || '';
   saveState();
 }
 
 export function saveFolderNote() {
+  const textarea = document.getElementById('folder-note');
+  if (textarea) limitTextareaInput(textarea);
   const f = state.folders.find(x => x.id === currentFolder);
   if (f) {
-    f.note = document.getElementById('folder-note')?.value || '';
+    f.note = textarea?.value || '';
     saveState();
   }
 }
 
 export function saveFolderReminder() {
+  const textarea = document.getElementById('folder-reminder');
+  if (textarea) limitTextareaInput(textarea);
   const f = state.folders.find(x => x.id === currentFolder);
   if (f) {
-    f.reminder = document.getElementById('folder-reminder')?.value || '';
+    f.reminder = textarea?.value || '';
     saveState();
   }
 }
 
 export function saveQuickNote() {
-  state.quickNote = document.getElementById('quick-note-text')?.value || '';
+  const textarea = document.getElementById('quick-note-text');
+  if (textarea) limitTextareaInput(textarea);
+  state.quickNote = textarea?.value || '';
   saveState();
 }
 
+function limitTextareaInput(el) {
+  if (!el) return;
+  if (el.scrollHeight > el.clientHeight) {
+    el.value = el.dataset.lastValid || '';
+    return false;
+  }
+  el.dataset.lastValid = el.value;
+  return true;
+}
+
+function initTextareaLimits() {
+  document.querySelectorAll('.note-textarea').forEach(el => {
+    el.dataset.lastValid = el.value || '';
+    el.addEventListener('input', () => {
+      limitTextareaInput(el);
+    });
+  });
+}
+
 export function saveAgendaNote() {
-  state.agendaNote = document.getElementById('agenda-note')?.value || '';
+  const textarea = document.getElementById('agenda-note');
+  if (textarea) limitTextareaInput(textarea);
+  state.agendaNote = textarea?.value || '';
   saveState();
 }
 
@@ -1257,6 +1286,7 @@ export function openConfirm(message, callback) {
 
 export function initLegacy() {
   init();
+  initTextareaLimits();
   document.querySelectorAll('.modal-overlay').forEach(m => {
     m.addEventListener('click', e => {
       if (e.target === m) m.classList.remove('open');

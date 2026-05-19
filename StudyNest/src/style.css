@@ -1287,12 +1287,12 @@ a {
   line-height: 1.7;
   min-height: 130px;
   max-height: 220px;
-  overflow-y: auto;
+  overflow: hidden;
   color: var(--text);
 }
 
 .note-textarea::-webkit-scrollbar {
-  width: 8px;
+  width: 0;
 }
 
 .note-textarea::-webkit-scrollbar-thumb {
