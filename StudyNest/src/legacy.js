@@ -987,7 +987,7 @@ export function saveQuickNote() {
 
 function limitTextareaInput(el) {
   if (!el) return;
-  if (el.scrollHeight > el.clientHeight) {
+  if (el.scrollHeight > el.clientHeight + 2) {
     el.value = el.dataset.lastValid || '';
     return false;
   }
