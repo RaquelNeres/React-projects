@@ -1183,8 +1183,8 @@ a {
 }
 
 .verse-card {
-  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(249,246,250,0.95));
-  border: 1px solid rgba(124,111,247,0.18);
+  background: var(--note-bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
   display: flex;
