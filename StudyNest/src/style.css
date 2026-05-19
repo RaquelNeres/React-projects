@@ -1835,6 +1835,8 @@ a {
   color: var(--text3);
   font-weight: 700;
 }
+
+.img-preview-item {
   border: 2px dashed var(--border);
   background: var(--bg2);
   display: flex;
