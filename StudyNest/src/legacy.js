@@ -16,6 +16,7 @@ export const state = reactive({
 
 export let currentFolder = null;
 export let currentView = 'grid';
+export let currentSubfolderFilter = '';
 export let currentWeekOffset = 0;
 export let editingNoteId = null;
 export let editingFolderNoteId = null;
@@ -31,17 +32,17 @@ export function loadState() {
     if (s) {
       const parsed = JSON.parse(s);
       Object.assign(state, {
-        folders: parsed.folders || [],
-        links: parsed.links || [],
-        noteFolders: parsed.noteFolders || [],
-        notes: parsed.notes || [],
-        folderNotes: parsed.folderNotes || [],
-        events: parsed.events || [],
-        homeNote: parsed.homeNote || '',
-        homeNoteImgs: parsed.homeNoteImgs || [],
-        quickNote: parsed.quickNote || '',
-        agendaNote: parsed.agendaNote || '',
-        theme: parsed.theme || 'dark',
+        folders: Array.isArray(parsed.folders) ? parsed.folders : [],
+        links: Array.isArray(parsed.links) ? parsed.links : [],
+        noteFolders: Array.isArray(parsed.noteFolders) ? parsed.noteFolders : [],
+        notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+        folderNotes: Array.isArray(parsed.folderNotes) ? parsed.folderNotes : [],
+        events: Array.isArray(parsed.events) ? parsed.events : [],
+        homeNote: typeof parsed.homeNote === 'string' ? parsed.homeNote : '',
+        homeNoteImgs: Array.isArray(parsed.homeNoteImgs) ? parsed.homeNoteImgs : [],
+        quickNote: typeof parsed.quickNote === 'string' ? parsed.quickNote : '',
+        agendaNote: typeof parsed.agendaNote === 'string' ? parsed.agendaNote : '',
+        theme: typeof parsed.theme === 'string' ? parsed.theme : 'dark',
       });
     }
   } catch (e) {
@@ -63,6 +64,81 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+function getFolderDepth(folder, depth = 0) {
+  if (!folder || !folder.parentId) return depth;
+  const parent = state.folders.find(f => f.id === folder.parentId);
+  return parent ? getFolderDepth(parent, depth + 1) : depth;
+}
+
+function getFolderDescendantIds(folderId) {
+  if (!folderId) return [];
+  return state.folders
+    .filter(f => f.parentId === folderId)
+    .flatMap(f => [f.id, ...getFolderDescendantIds(f.id)]);
+}
+
+function renderFolderTree() {
+  return state.folders
+    .filter(f => !f.parentId)
+    .map(f => `
+      <div class="folder-item ${currentFolder === f.id ? 'active' : ''}" style="padding-left:16px" onclick="openFolder('${f.id}')">
+        <div class="folder-icon" style="background:${f.color}22;border:1px solid ${f.color}44">
+          ${f.coverImg ? `<img src="${f.coverImg}" alt="">` : `<span>${f.emoji || '📁'}</span>`}
+        </div>
+        <div class="folder-info">
+          <div class="folder-name" style="color:${currentFolder === f.id ? f.color : ''}">${f.name}</div>
+          <div class="folder-count">${state.links.filter(l => l.folderId === f.id).length} links</div>
+        </div>
+      </div>
+    `)
+    .join('');
+}
+
+function buildSubfolderOptions(parentId, selected = '') {
+  return state.folders
+    .filter(f => f.parentId === parentId)
+    .sort((a, b) => getFolderDepth(a) - getFolderDepth(b) || a.name.localeCompare(b.name))
+    .map(f => {
+      const indent = '  '.repeat(getFolderDepth(f));
+      return `<option value="${f.id}" ${selected === f.id ? 'selected' : ''}>${indent}${f.emoji || '📁'} ${escapeHtml(f.name)}</option>`;
+    })
+    .join('');
+}
+
+function buildRootFolderOptions(selected = '') {
+  return state.folders
+    .filter(f => !f.parentId)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(f => `<option value="${f.id}" ${selected === f.id ? 'selected' : ''}>${escapeHtml(f.name)}</option>`)
+    .join('');
+}
+
+function updateLinkModalSubfolderOptions(parentId, selected = '') {
+  const subSel = document.getElementById('link-subfolder');
+  if (!subSel) return;
+  const children = state.folders.filter(f => f.parentId === parentId);
+  if (!parentId || children.length === 0) {
+    subSel.innerHTML = '<option value="">Sem subpastas</option>';
+    subSel.disabled = true;
+    subSel.value = '';
+  } else {
+    subSel.disabled = false;
+    subSel.innerHTML = '<option value="">Sem subpasta</option>' + buildSubfolderOptions(parentId, selected);
+    subSel.value = selected;
+  }
+}
+
+function buildFolderOptions(selected = '', excludeIds = []) {
+  return state.folders
+    .filter(f => !excludeIds.includes(f.id))
+    .sort((a, b) => getFolderDepth(a) - getFolderDepth(b) || a.name.localeCompare(b.name))
+    .map(f => {
+      const indent = '  '.repeat(getFolderDepth(f));
+      return `<option value="${f.id}" ${selected === f.id ? 'selected' : ''}>${indent}${f.emoji || '📁'} ${escapeHtml(f.name)}</option>`;
+    })
+    .join('');
+}
+
 function init() {
   loadState();
   setTheme(state.theme || 'dark', false);
@@ -77,6 +153,8 @@ function init() {
   renderAgenda();
   updateNoteFolderSelects();
   renderGeneralNotes();
+  const subfolderSelect = document.getElementById('folder-subfolder-filter');
+  if (subfolderSelect) subfolderSelect.onchange = refreshFolderLinksFilter;
 }
 
 export function setTheme(t, save = true) {
@@ -107,28 +185,14 @@ export function toggleSidebar() {
 export function renderSidebar() {
   const list = document.getElementById('folder-list');
   if (!list) return;
-  list.innerHTML = state.folders
-    .map(f => `
-      <div class="folder-item ${currentFolder === f.id ? 'active' : ''}" onclick="openFolder('${f.id}')">
-        <div class="folder-icon" style="background:${f.color}22;border:1px solid ${f.color}44">
-          ${f.coverImg ? `<img src="${f.coverImg}" alt="">` : `<span>${f.emoji || '📁'}</span>`}
-        </div>
-        <div class="folder-info">
-          <div class="folder-name" style="color:${currentFolder === f.id ? f.color : ''}">${f.name}</div>
-          <div class="folder-count">${state.links.filter(l => l.folderId === f.id).length} links</div>
-        </div>
-      </div>
-    `)
-    .join('');
+  list.innerHTML = renderFolderTree();
 
   const sel = document.getElementById('link-folder');
   if (sel) {
     const cur = sel.value;
     sel.innerHTML =
       '<option value="">Sem pasta</option>' +
-      state.folders
-        .map(f => `<option value="${f.id}" ${cur === f.id ? 'selected' : ''}>${f.emoji || '📁'} ${f.name}</option>`)
-        .join('');
+      buildFolderOptions(cur);
   }
 }
 
@@ -156,6 +220,7 @@ export function showPage(page, title) {
 
 export function openFolder(id) {
   currentFolder = id;
+  currentSubfolderFilter = '';
   const f = state.folders.find(x => x.id === id);
   if (!f) return;
   showPage('folder', f.name);
@@ -213,14 +278,15 @@ export function renderHomePage() {
     }
   }
 
+  const rootFolders = state.folders.filter(f => !f.parentId);
   const fgrid = document.getElementById('home-folders-grid');
   if (fgrid) {
-    if (state.folders.length === 0) {
+    if (rootFolders.length === 0) {
       fgrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
         <h3>Nenhuma pasta ainda</h3><p>Crie pastas para organizar seus links</p></div>`;
     } else {
-      fgrid.innerHTML = state.folders
+      fgrid.innerHTML = rootFolders
         .map(f => {
           const count = state.links.filter(l => l.folderId === f.id).length;
           return `
@@ -316,8 +382,27 @@ export function saveFolderNoteItem(id) {
 }
 
 export function renderFolderPage(f) {
+  const subfolderSelect = document.getElementById('folder-subfolder-filter');
+  const children = state.folders.filter(sf => sf.parentId === f.id);
+  if (subfolderSelect) {
+    const filterValue = currentSubfolderFilter || '';
+    if (children.length === 0) {
+      subfolderSelect.innerHTML = '<option value="">Sem subpastas</option>';
+      subfolderSelect.disabled = true;
+    } else {
+      subfolderSelect.disabled = false;
+      subfolderSelect.innerHTML = '<option value="">Todos os links</option>' + buildSubfolderOptions(f.id, filterValue);
+    }
+    subfolderSelect.value = filterValue;
+    subfolderSelect.onchange = refreshFolderLinksFilter;
+  }
+  const visibleFolderIds = [f.id, ...getFolderDescendantIds(f.id)];
   const links = state.links
-    .filter(l => l.folderId === f.id)
+    .filter(l =>
+      currentSubfolderFilter === '' || !currentSubfolderFilter
+        ? visibleFolderIds.includes(l.folderId)
+        : l.folderId === currentSubfolderFilter
+    )
     .sort((a, b) => {
       if (a.order != null && b.order != null) return a.order - b.order;
       if (a.order != null) return -1;
@@ -335,6 +420,7 @@ export function renderFolderPage(f) {
         ${f.desc ? `<div class="folder-header-desc">${f.desc}</div>` : ''}
       </div>
       <div class="folder-header-actions">
+        <button class="btn btn-primary" onclick="openAddFolderModal('${f.id}')" style="padding:6px 12px;font-size:0.8rem">+ Subpasta</button>
         <button class="btn btn-ghost" onclick="openEditFolderModal('${f.id}')" style="padding:6px 12px;font-size:0.8rem">✏️ Editar</button>
         <button class="btn btn-danger" onclick="confirmDelete('pasta','${f.id}')" style="padding:6px 12px;font-size:0.8rem">🗑️</button>
       </div>
@@ -345,10 +431,11 @@ export function renderFolderPage(f) {
       container.innerHTML = `<div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         <h3>Nenhum link nesta pasta</h3>
-        <p>Adicione links para começar</p>
+        <p>Adicione links ou subpastas para começar</p>
       </div>`;
     } else {
-      renderLinks(links, container);
+      container.innerHTML = `<div class="section-title" style="margin:18px 0 12px">Links nesta pasta</div><div id="folder-links-list"></div>`;
+      renderLinks(links, document.getElementById('folder-links-list'));
     }
   }
   renderFolderNotes();
@@ -396,13 +483,19 @@ function attachSortables(containerSelectorOrEl) {
 
     const isLinks = container.classList.contains('links-grid') || container.classList.contains('links-list');
     const isNotes = container.id === 'folder-notes-list' || container.id === 'notes-list' || container.closest('#folder-notes-list') || container.closest('#notes-list');
+    const isEditingNote = (container.id === 'folder-notes-list' || container.closest('#folder-notes-list')) ? !!editingFolderNoteId : !!editingNoteId;
+
+    if (isNotes && isEditingNote) {
+      if (window._sortableInstances[key]) {
+        try { window._sortableInstances[key].destroy(); } catch (e) {}
+      }
+      return;
+    }
 
     window._sortableInstances[key] = SortableLib.create(container, {
       animation: 150,
-      // allow dragging the whole note card for easier reordering
-      // but prevent dragging when interacting with inputs, buttons or editors
       draggable: isLinks ? '.link-card, .link-list-item' : '.note-card',
-      filter: 'input, textarea, select, .btn, .editor-toolbar, .rich-editor, .note-card-actions, .upload-img-area',
+      filter: 'input, textarea, select, button, .btn, .editor-toolbar, .rich-editor, .note-card-actions, .upload-img-area',
       preventOnFilter: true,
       onEnd(evt) {
         // update order based on DOM
@@ -869,8 +962,18 @@ export function setView(v) {
   if (listBtn) listBtn.classList.toggle('active', v === 'list');
   if (currentFolder) {
     const f = state.folders.find(x => x.id === currentFolder);
-    if (f) renderLinks(state.links.filter(l => l.folderId === f.id), document.getElementById('folder-links-container'));
+    if (f) renderFolderPage(f);
   }
+}
+
+export function refreshFolderLinksFilter() {
+  if (!currentFolder) return;
+  const filterSelect = document.getElementById('folder-subfolder-filter');
+  if (filterSelect) {
+    currentSubfolderFilter = filterSelect.value;
+  }
+  const f = state.folders.find(x => x.id === currentFolder);
+  if (f) renderFolderPage(f);
 }
 
 export function openModal(id) {
@@ -899,11 +1002,18 @@ export function openAddLinkModal() {
   tempImages = [];
   const imgs = document.getElementById('link-modal-imgs');
   if (imgs) imgs.innerHTML = '';
-  const sel = document.getElementById('link-folder');
-  if (sel)
-    sel.innerHTML =
-      '<option value="">Sem pasta</option>' +
-      state.folders.map(f => `<option value="${f.id}" ${f.id === currentFolder ? 'selected' : ''}>${f.emoji || '📁'} ${f.name}</option>`).join('');
+  const parentSel = document.getElementById('link-parent-folder');
+  const selectedParentId = (() => {
+    if (!currentFolder) return '';
+    const current = state.folders.find(f => f.id === currentFolder);
+    return current ? current.parentId || current.id : '';
+  })();
+  if (parentSel) {
+    parentSel.innerHTML = '<option value="">Sem pasta</option>' + buildRootFolderOptions(selectedParentId);
+    parentSel.value = selectedParentId;
+    parentSel.onchange = () => updateLinkModalSubfolderOptions(parentSel.value, '');
+  }
+  updateLinkModalSubfolderOptions(selectedParentId, currentFolder && state.folders.find(f => f.id === currentFolder && f.parentId) ? currentFolder : '');
   openModal('modal-add-link');
 }
 
@@ -924,11 +1034,16 @@ export function openEditLinkModal(id) {
   if (tags) tags.value = l.tags || '';
   tempImages = [...(l.images || [])];
   renderNoteImages('link-modal-imgs', tempImages, true);
-  const sel = document.getElementById('link-folder');
-  if (sel)
-    sel.innerHTML =
-      '<option value="">Sem pasta</option>' +
-      state.folders.map(f => `<option value="${f.id}" ${f.id === l.folderId ? 'selected' : ''}>${f.emoji || '📁'} ${f.name}</option>`).join('');
+  const parentSel = document.getElementById('link-parent-folder');
+  const selectedFolder = state.folders.find(f => f.id === l.folderId);
+  const selectedParentId = selectedFolder ? (selectedFolder.parentId || selectedFolder.id) : '';
+  const selectedSubId = selectedFolder && selectedFolder.parentId ? selectedFolder.id : '';
+  if (parentSel) {
+    parentSel.innerHTML = '<option value="">Sem pasta</option>' + buildRootFolderOptions(selectedParentId);
+    parentSel.value = selectedParentId;
+    parentSel.onchange = () => updateLinkModalSubfolderOptions(parentSel.value, '');
+  }
+  updateLinkModalSubfolderOptions(selectedParentId, selectedSubId);
   openModal('modal-add-link');
 }
 
@@ -947,7 +1062,7 @@ export function saveLink() {
     title: document.getElementById('link-title')?.value.trim() || getDomain(url),
     note: document.getElementById('link-note')?.value.trim(),
     tags: document.getElementById('link-tags')?.value.trim(),
-    folderId: document.getElementById('link-folder')?.value,
+    folderId: document.getElementById('link-subfolder')?.value || document.getElementById('link-parent-folder')?.value || '',
     images: [...tempImages],
     richNote: prevLink.richNote || '',
     createdAt: prevLink.createdAt || Date.now(),
@@ -965,12 +1080,16 @@ export function autoFillTitle() {
   if (url && title && !title.value) title.value = getDomain(url);
 }
 
-export function openAddFolderModal() {
+export function openAddFolderModal(defaultParentId = '') {
+  if (!defaultParentId && currentFolder) {
+    defaultParentId = currentFolder;
+  }
   const title = document.getElementById('folder-modal-title');
   const editId = document.getElementById('edit-folder-id');
   const name = document.getElementById('folder-name-input');
   const desc = document.getElementById('folder-desc-input');
   const emoji = document.getElementById('folder-emoji-input');
+  const parentSel = document.getElementById('folder-parent');
   const preview = document.getElementById('folder-img-preview');
   if (title) title.textContent = 'Nova Pasta';
   if (editId) editId.value = '';
@@ -978,6 +1097,8 @@ export function openAddFolderModal() {
   if (desc) desc.value = '';
   if (emoji) emoji.value = '';
   if (preview) preview.innerHTML = '';
+  if (parentSel) parentSel.innerHTML = '<option value="">Raiz</option>' + buildFolderOptions(defaultParentId || '');
+  if (parentSel && defaultParentId) parentSel.value = defaultParentId;
   folderCoverImg = '';
   selectedFolderColor = '#7c6ff7';
   document.querySelectorAll('#folder-color-swatches .swatch').forEach(s => s.classList.remove('active'));
@@ -993,15 +1114,21 @@ export function openEditFolderModal(id) {
   const name = document.getElementById('folder-name-input');
   const desc = document.getElementById('folder-desc-input');
   const emoji = document.getElementById('folder-emoji-input');
+  const parentSel = document.getElementById('folder-parent');
   const preview = document.getElementById('folder-img-preview');
   if (title) title.textContent = 'Editar Pasta';
   if (editId) editId.value = id;
   if (name) name.value = f.name;
   if (desc) desc.value = f.desc || '';
   if (emoji) emoji.value = f.emoji || '';
+  if (preview) preview.innerHTML = f.coverImg ? `<div class="img-preview-item"><img src="${f.coverImg}" alt=""></div>` : '';
+  if (parentSel) {
+    const disabledIds = [f.id, ...getFolderDescendantIds(f.id)];
+    parentSel.innerHTML = '<option value="">Raiz</option>' + buildFolderOptions(f.parentId || '', disabledIds);
+    parentSel.value = f.parentId || '';
+  }
   folderCoverImg = f.coverImg || '';
   selectedFolderColor = f.color || '#7c6ff7';
-  if (preview) preview.innerHTML = folderCoverImg ? `<div class="img-preview-item"><img src="${folderCoverImg}" alt=""></div>` : '';
   document.querySelectorAll('#folder-color-swatches .swatch').forEach(s => {
     s.classList.toggle('active', s.dataset.color === selectedFolderColor);
   });
@@ -1019,6 +1146,7 @@ export function saveFolder() {
   const data = {
     id: editId || 'f' + Date.now(),
     name,
+    parentId: document.getElementById('folder-parent')?.value || '',
     desc: document.getElementById('folder-desc-input')?.value.trim(),
     emoji: document.getElementById('folder-emoji-input')?.value.trim() || '📁',
     color: selectedFolderColor,
@@ -1326,17 +1454,17 @@ export function importData(e) {
       const d = JSON.parse(ev.target.result);
       if (!confirm('Substituir todos os dados atuais pelo backup?')) return;
       Object.assign(state, {
-        folders: d.folders || [],
-        links: d.links || [],
-        noteFolders: d.noteFolders || [],
-        notes: d.notes || [],
-        folderNotes: d.folderNotes || [],
-        events: d.events || [],
-        homeNote: d.homeNote || '',
-        homeNoteImgs: d.homeNoteImgs || [],
-        quickNote: d.quickNote || '',
-        agendaNote: d.agendaNote || '',
-        theme: d.theme || state.theme,
+        folders: Array.isArray(d.folders) ? d.folders : [],
+        links: Array.isArray(d.links) ? d.links : [],
+        noteFolders: Array.isArray(d.noteFolders) ? d.noteFolders : [],
+        notes: Array.isArray(d.notes) ? d.notes : [],
+        folderNotes: Array.isArray(d.folderNotes) ? d.folderNotes : [],
+        events: Array.isArray(d.events) ? d.events : [],
+        homeNote: typeof d.homeNote === 'string' ? d.homeNote : '',
+        homeNoteImgs: Array.isArray(d.homeNoteImgs) ? d.homeNoteImgs : [],
+        quickNote: typeof d.quickNote === 'string' ? d.quickNote : '',
+        agendaNote: typeof d.agendaNote === 'string' ? d.agendaNote : '',
+        theme: typeof d.theme === 'string' ? d.theme : state.theme,
       });
       saveState();
       init();
@@ -1430,6 +1558,8 @@ export function initLegacy() {
 
 const legacyGlobals = {
   state,
+  currentFolder,
+  currentView,
   loadState,
   saveState,
   escapeHtml,

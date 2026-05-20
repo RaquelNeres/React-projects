@@ -131,7 +131,12 @@
             </div>
             <div class="folder-panel">
               <div class="toolbar">
-                <div class="section-title" style="margin-bottom:0">Links</div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                  <div class="section-title" style="margin-bottom:0">Links</div>
+                  <select id="folder-subfolder-filter" onchange="refreshFolderLinksFilter()" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:0.85rem;min-width:260px;">
+                    <option value="">Todos os links</option>
+                  </select>
+                </div>
                 <div class="toolbar-right">
                   <div class="view-toggle">
                     <button class="vt-btn active" id="vt-grid" onclick="setView('grid')" title="Grade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
@@ -235,7 +240,11 @@
         <div class="form-group"><label>Tags (separadas por vírgula)</label><input type="text" id="link-tags" placeholder="react, tutorial, importante" /></div>
         <div class="form-group">
           <label>Pasta</label>
-          <select id="link-folder"><option value="">Sem pasta</option></select>
+          <select id="link-parent-folder"><option value="">Sem pasta</option></select>
+        </div>
+        <div class="form-group">
+          <label>Subpasta</label>
+          <select id="link-subfolder" disabled><option value="">Sem subpastas</option></select>
         </div>
         <div class="form-group">
           <label>Imagens Anexadas</label>
@@ -257,6 +266,7 @@
         <input type="hidden" id="edit-folder-id" />
         <div class="form-group"><label>Nome *</label><input type="text" id="folder-name-input" placeholder="Ex: Desenvolvimento Web" /></div>
         <div class="form-group"><label>Descrição</label><input type="text" id="folder-desc-input" placeholder="Opcional" /></div>
+        <div class="form-group"><label>Pasta pai</label><select id="folder-parent" class="border border-slate-500 bg-[#374151] text-white p-2 rounded-lg w-full"><option value="">Raiz</option></select></div>
         <div class="form-group"><label>Emoji (ícone)</label><input type="text" id="folder-emoji-input" placeholder="📚" maxlength="4" style="width:80px" /></div>
         <div class="form-group">
           <label>Imagem da Pasta</label>
