@@ -250,7 +250,14 @@ export function renderFolderNotes() {
     list.innerHTML = '';
     return;
   }
-  const notes = state.folderNotes.filter(n => n.folderId === currentFolder).sort((a, b) => b.createdAt - a.createdAt);
+  const notes = state.folderNotes
+    .filter(n => n.folderId === currentFolder)
+    .sort((a, b) => {
+      if (a.order != null && b.order != null) return a.order - b.order;
+      if (a.order != null) return -1;
+      if (b.order != null) return 1;
+      return b.createdAt - a.createdAt;
+    });
   if (notes.length === 0) {
     list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 10h16M4 14h10"/></svg><h3>Nenhuma anotação na pasta</h3><p>Use o botão acima para criar uma nota rápida.</p></div>`;
     return;
@@ -267,12 +274,14 @@ export function renderFolderNotes() {
       const actionsHtml = isEditing
         ? `<div class="note-card-actions"><button class="btn btn-success" title="Salvar" onclick="saveFolderNoteItem('${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg></button><button class="btn btn-ghost" title="Cancelar" onclick="cancelEditFolderNote()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><button class="btn btn-danger" title="Excluir" onclick="confirmDelete('folder-note','${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></div>`
         : `<div class="note-card-actions"><button class="btn btn-ghost" title="Editar" onclick="editFolderNoteItem('${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-danger" title="Excluir" onclick="confirmDelete('folder-note','${n.id}')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></div>`;
-      return `<div class="note-card">
+      return `<div class="note-card" data-id="${n.id}">
         <div class="note-card-header">${titleHtml}${actionsHtml}</div>
         <div class="note-card-body"><div class="note-card-main">${contentHtml}</div></div>
       </div>`;
     })
     .join('');
+  // attach sortable after rendering
+  attachSortables('#folder-notes-list');
 }
 
 export function addFolderNote() {
@@ -307,7 +316,14 @@ export function saveFolderNoteItem(id) {
 }
 
 export function renderFolderPage(f) {
-  const links = state.links.filter(l => l.folderId === f.id);
+  const links = state.links
+    .filter(l => l.folderId === f.id)
+    .sort((a, b) => {
+      if (a.order != null && b.order != null) return a.order - b.order;
+      if (a.order != null) return -1;
+      if (b.order != null) return 1;
+      return b.createdAt - a.createdAt;
+    });
   const header = document.getElementById('folder-header');
   if (header)
     header.innerHTML = `
@@ -336,13 +352,89 @@ export function renderFolderPage(f) {
     }
   }
   renderFolderNotes();
+  // ensure drag/drop for links in this folder
+  attachSortables('#folder-links-container');
 }
 
 export function renderLinks(links, container) {
   if (!container) return;
   if (currentView === 'grid') container.innerHTML = `<div class="links-grid fade-in">${links.map(l => renderLinkCard(l)).join('')}</div>`;
   else container.innerHTML = `<div class="links-list fade-in">${links.map(l => renderLinkListItem(l)).join('')}</div>`;
+  // attach sortable for the rendered links
+  attachSortables(container);
 }
+
+// --- Drag & Drop helpers using SortableJS ---
+function attachSortables(containerSelectorOrEl) {
+  if (typeof Sortable === 'undefined' && typeof window.Sortable === 'undefined') return;
+  const SortableLib = typeof Sortable !== 'undefined' ? Sortable : window.Sortable;
+
+  // normalize to element
+  let containers = [];
+  if (!containerSelectorOrEl) {
+    containers = [document.querySelector('#folder-links-container'), document.querySelector('#folder-notes-list'), document.querySelector('#notes-list')].filter(Boolean);
+  } else if (typeof containerSelectorOrEl === 'string') {
+    const el = document.querySelector(containerSelectorOrEl);
+    if (el) containers = [el];
+    // also if selector is '#folder-links-container' attach to its inner grid/list
+    if (containerSelectorOrEl === '#folder-links-container') {
+      const inner = el && el.querySelector('.links-grid, .links-list');
+      if (inner) containers = [inner];
+    }
+  } else if (containerSelectorOrEl instanceof Element) {
+    containers = [containerSelectorOrEl];
+  }
+
+  window._sortableInstances = window._sortableInstances || {};
+
+  containers.forEach(container => {
+    const key = container === document ? '#document' : (container.id || container.className || Math.random().toString(36).slice(2));
+    // destroy previous if exists
+    if (window._sortableInstances[key]) {
+      try { window._sortableInstances[key].destroy(); } catch (e) {}
+    }
+
+    const isLinks = container.classList.contains('links-grid') || container.classList.contains('links-list');
+    const isNotes = container.id === 'folder-notes-list' || container.id === 'notes-list' || container.closest('#folder-notes-list') || container.closest('#notes-list');
+
+    window._sortableInstances[key] = SortableLib.create(container, {
+      animation: 150,
+      // allow dragging the whole note card for easier reordering
+      // but prevent dragging when interacting with inputs, buttons or editors
+      draggable: isLinks ? '.link-card, .link-list-item' : '.note-card',
+      filter: 'input, textarea, select, .btn, .editor-toolbar, .rich-editor, .note-card-actions, .upload-img-area',
+      preventOnFilter: true,
+      onEnd(evt) {
+        // update order based on DOM
+        if (isLinks) {
+          const parentFolderEl = container.closest('#folder-links-container');
+          updateOrderFromDOM(container, '.link-card, .link-list-item', state.links);
+          saveState();
+          refreshCurrentView();
+        } else {
+          // notes
+          const isFolderNotes = container.closest('#folder-notes-list');
+          if (isFolderNotes) updateOrderFromDOM(container, '.note-card', state.folderNotes);
+          else updateOrderFromDOM(container, '.note-card', state.notes);
+          saveState();
+          renderFolderNotes();
+          renderGeneralNotes();
+        }
+      },
+    });
+  });
+}
+
+function updateOrderFromDOM(container, itemSelector, arrayRef) {
+  const ids = Array.from(container.querySelectorAll(itemSelector)).map(el => el.getAttribute('data-id')).filter(Boolean);
+  if (!ids.length) return;
+  // assign order based on position
+  ids.forEach((id, idx) => {
+    const item = arrayRef.find(x => x.id === id);
+    if (item) item.order = idx;
+  });
+}
+
 
 export function transformarParaEmbed(url) {
   if (!url) return null;
@@ -381,7 +473,7 @@ export function renderLinkCard(l) {
   const embedUrl = transformarParaEmbed(l.url);
   const hasRichNote = l.richNote && l.richNote.trim() !== '';
 
-  return `<div class="link-card fade-in">
+  return `<div class="link-card fade-in" data-id="${l.id}">
     ${embedUrl ? `
       <div class="embed-container">
         <iframe src="${embedUrl}" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
@@ -416,7 +508,7 @@ export function renderLinkCard(l) {
 
 export function renderLinkListItem(l) {
   const favicon = getFavicon(l.url);
-  return `<div class="link-list-item fade-in">
+  return `<div class="link-list-item fade-in" data-id="${l.id}">
     <div class="link-list-main">
       <div class="link-favicon">${favicon ? `<img src="${favicon}" alt="">` : getDomainInitial(l.url)}</div>
       <div class="link-list-text">
@@ -515,12 +607,21 @@ export function renderGeneralNotes() {
     filteredNotes = state.notes.filter(n => n.folderId === currentFolderId);
   }
 
+  // sort filtered notes by optional order property or createdAt desc
+  filteredNotes = filteredNotes.slice().sort((a, b) => {
+    if (a.order != null && b.order != null) return a.order - b.order;
+    if (a.order != null) return -1;
+    if (b.order != null) return 1;
+    return b.createdAt - a.createdAt;
+  });
+
   if (filteredNotes.length === 0) {
     list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       <h3>Nenhuma anotação</h3><p>Crie notas de estudo, resumos...</p></div>`;
     return;
   }
 
+  // sort by optional order property (if present) or by createdAt desc
   list.innerHTML = filteredNotes
     .map(n => {
       const isEditing = editingNoteId === n.id;
@@ -558,7 +659,7 @@ export function renderGeneralNotes() {
         </div>`;
 
       return `
-      <div class="note-card" style="margin-bottom:12px">
+      <div class="note-card" data-id="${n.id}" style="margin-bottom:12px">
         <div class="note-card-header">
           ${titleHtml}
           ${folderHtml}
@@ -572,6 +673,8 @@ export function renderGeneralNotes() {
     `;
     })
     .join('');
+
+  attachSortables('#notes-list');
 
   filteredNotes.forEach(n => renderNoteImages(`note-imgs-${n.id}`, n.images || [], false, n.id));
 }
